@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import uuid4
 from typing import Any, Callable, Type
 
 from pydantic import BaseModel, ValidationError
@@ -86,7 +87,7 @@ class ToolRegistry:
                 audit_event_hash=event_hash,
             )
 
-        event_id = f"tool:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}"
+        event_id = f"tool:{uuid4()}"
         try:
             data = tool.handler(model, context)
             event_hash = context.audit_ledger.append_event(
