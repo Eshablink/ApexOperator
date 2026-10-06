@@ -1,4 +1,4 @@
-from pathlib import Path
+from decimal import Decimal
 
 import fitz
 import pytest
@@ -29,7 +29,7 @@ def test_extract_text_pdf_invoice():
     result = InvoiceDocumentExtractor().extract_pdf(content)
     assert result.invoice_id == "INV-PDF-001"
     assert result.vendor_name == "Acme Supplies"
-    assert result.total == "1180.00"
+    assert result.total == Decimal("1180.00")
     assert result.confidence_class.value == "HIGH"
 
 
@@ -89,9 +89,14 @@ def test_ocr_boundary_is_explicit():
                 "Subtotal: 200.00\nTax: 36.00\nTotal: 236.00\n"
             )
 
-    class BlankPDF:
-        pass
+    blank = fitz.open()
+    blank.new_page()
+    content = blank.tobytes()
+    blank.close()
 
-    # A malformed input must still be rejected before OCR is considered.
+    result = InvoiceDocumentExtractor(StubOCR()).extract_pdf(content)
+    assert result.invoice_id == "INV-OCR"
+    assert result.confidence_class.value == "HIGH"
+
     with pytest.raises(DocumentSecurityError):
         InvoiceDocumentExtractor(StubOCR()).extract_pdf(b"fake")
