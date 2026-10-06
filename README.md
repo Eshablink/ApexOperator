@@ -147,6 +147,8 @@ The development authentication mapping is intentionally local-only. It is not pr
 - **Engineering case study:** [docs/CASE_STUDY.md](docs/CASE_STUDY.md)
 - **Demo script:** [docs/DEMO.md](docs/DEMO.md)
 - **Security model:** [docs/SECURITY.md](docs/SECURITY.md)
+- **Resume bullets:** [docs/RESUME.md](docs/RESUME.md)
+- **Interview guide:** [docs/INTERVIEW.md](docs/INTERVIEW.md)
 
 ## Engineering principles
 
