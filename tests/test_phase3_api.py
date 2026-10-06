@@ -182,3 +182,19 @@ def test_unknown_invoice_returns_not_found(tmp_path):
         headers=auth("clerk-token"),
     )
     assert response.status_code == 404
+
+
+def test_ready_and_secured_dashboard(tmp_path):
+    client = make_client(tmp_path)
+    ready = client.get("/ready")
+    assert ready.status_code == 200
+    assert ready.json() == {"status": "ready"}
+
+    denied = client.get("/dashboard", headers=auth("clerk-token"))
+    allowed = client.get("/dashboard", headers=auth("manager-token"))
+
+    assert denied.status_code == 403
+    assert allowed.status_code == 200
+    assert "ApexOperator Operations Dashboard" in allowed.text
+
+
