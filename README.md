@@ -154,8 +154,6 @@ uvicorn apexoperator.api.main:create_app --factory --reload
 
 Open **http://127.0.0.1:8000/** for the product landing page and live control room.
 
-```
-```
 
 The development authentication mapping is intentionally local-only. It is not presented as production identity infrastructure.
 
