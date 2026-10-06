@@ -1,5 +1,25 @@
 # ApexOperator Demo
 
+## 0. Frontend-first demo
+
+Open `http://127.0.0.1:8000/` after starting the API. The product landing page is the primary presentation surface.
+
+Click **Open live control room** and choose **Finance Manager**. The control room exposes live persisted task data, audit integrity, planner mode, runtime bounds, invoice processing, and explicit approve/reject actions.
+
+## Optional live AI planner
+
+Set `APEX_PLANNER=openai`, `OPENAI_API_KEY`, and optionally `OPENAI_MODEL` before starting the API.
+
+The same approval workflow remains governed by the deterministic runtime and Tool Registry. The LLM only proposes the next permitted action.
+
+## Container demo
+
+```bash
+docker compose up --build
+```
+
+Then open `http://127.0.0.1:8000/`.
+
 This demo is designed to fit into roughly two minutes.
 
 ## 1. Start the API
