@@ -1,6 +1,6 @@
 import os
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Settings(BaseModel):
@@ -18,6 +18,14 @@ class Settings(BaseModel):
     openai_model: str = Field(
         default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-6-astra")
     )
+
+    @field_validator("planner_mode")
+    @classmethod
+    def validate_planner_mode(cls, value: str) -> str:
+        value = value.strip().lower()
+        if value not in {"mock", "openai"}:
+            raise ValueError("APEX_PLANNER must be 'mock' or 'openai'")
+        return value
 
 
 settings = Settings()
