@@ -92,7 +92,7 @@ class SQLAlchemyAuditLedger:
                     AuditEventRecord(
                         sequence_id=sequence_id,
                         event_id=event_id,
-                        timestamp=timestamp,
+                        timestamp=timestamp.isoformat(),
                         event_type=event_type,
                         action=action,
                         after_state=normalized,
@@ -123,7 +123,7 @@ class SQLAlchemyAuditLedger:
 
                 event = {
                     "sequence_id": row.sequence_id,
-                    "timestamp": row.timestamp.isoformat(),
+                    "timestamp": row.timestamp,
                     "event_id": row.event_id,
                     "event_type": row.event_type,
                     "action": row.action,
