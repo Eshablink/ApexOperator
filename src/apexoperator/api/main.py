@@ -26,7 +26,7 @@ from apexoperator.service.approvals import ApprovalService
 def create_app(
     *,
     workspace_dir: str | Path = "workspace",
-    database_path: str | Path = "apexoperator_api.sqlite3",
+    database_path: str | Path | None = None,
     database_url: str | None = None,
     authenticator: InMemoryAuthenticator | None = None,
     planner = None,
@@ -39,7 +39,7 @@ def create_app(
         }
     )
 
-    resolved_url = database_url or f"sqlite:///{Path(database_path).resolve()}"
+    resolved_url = database_url or (settings.database_url if database_path is None else f"sqlite:///{Path(database_path).resolve()}")
     engine = make_engine(resolved_url)
     init_database(engine)
     sessions = make_session_factory(engine)
