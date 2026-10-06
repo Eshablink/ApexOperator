@@ -3,6 +3,9 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from apexoperator.agent.runtime import MockPlanner
+from apexoperator.agent.openai_planner import OpenAIPlanner
+from apexoperator.config import settings
 from apexoperator.observability.logging import configure_logging, log_request
 
 from apexoperator.api.schemas import (
@@ -25,6 +28,7 @@ def create_app(
     database_path: str | Path = "apexoperator_api.sqlite3",
     database_url: str | None = None,
     authenticator: InMemoryAuthenticator | None = None,
+    planner = None,
 ) -> FastAPI:
     authenticator = authenticator or InMemoryAuthenticator(
         {
@@ -42,14 +46,27 @@ def create_app(
     task_store = SQLAlchemyTaskStore(sessions)
     audit_ledger = SQLAlchemyAuditLedger(sessions)
 
+    resolved_planner = planner
+    if resolved_planner is None:
+        if settings.planner_mode == "openai":
+            if not settings.openai_api_key:
+                raise RuntimeError("APEX_PLANNER=openai requires OPENAI_API_KEY")
+            resolved_planner = OpenAIPlanner(
+                api_key=settings.openai_api_key,
+                model=settings.openai_model,
+            )
+        else:
+            resolved_planner = MockPlanner()
+
     service = ApprovalService(
         workspace_dir=str(workspace_dir),
         task_store=task_store,
         audit_ledger=audit_ledger,
+        planner=resolved_planner,
     )
 
     logger = configure_logging()
-    api = FastAPI(title="ApexOperator API", version="0.2.0")
+    api = FastAPI(title="ApexOperator API", version="0.3.0")
     api.state.authenticator = authenticator
     api.state.service = service
     api.state.engine = engine
