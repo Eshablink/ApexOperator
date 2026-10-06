@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import uuid4
 from typing import Any, Callable, Type
 
 from pydantic import BaseModel, ValidationError
@@ -51,7 +52,7 @@ class ToolRegistry:
 
         if not RBAC.is_allowed(context.role, tool.permission):
             event_hash = context.audit_ledger.append_event(
-                f"tool-denied:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}",
+                f"tool-denied:{uuid4()}",
                 "TOOL_DENIED",
                 {
                     "actor_id": context.actor_id,
@@ -71,7 +72,7 @@ class ToolRegistry:
             model = tool.input_model.model_validate(input_data)
         except ValidationError as exc:
             event_hash = context.audit_ledger.append_event(
-                f"tool-invalid-input:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}",
+                f"tool-invalid-input:{uuid4()}",
                 "TOOL_INVALID_INPUT",
                 {
                     "actor_id": context.actor_id,
@@ -86,7 +87,7 @@ class ToolRegistry:
                 audit_event_hash=event_hash,
             )
 
-        event_id = f"tool:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}"
+        event_id = f"tool:{uuid4()}"
         try:
             data = tool.handler(model, context)
             event_hash = context.audit_ledger.append_event(
