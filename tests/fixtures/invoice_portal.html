@@ -1,0 +1,17 @@
+<!doctype html>
+<html><body>
+<form id="invoice-form">
+<label for="invoice-id">Invoice ID</label>
+<input id="invoice-id" name="invoice_id">
+<button id="search-invoice" type="submit">Search</button>
+<button id="submit-invoice" type="button">Submit</button>
+</form>
+<section id="invoice-result" hidden><span id="invoice-status"></span><span id="invoice-total"></span></section>
+<section id="submission-result" hidden><span id="submission-status"></span></section>
+<script>
+const totals={"INV-LOW-001":"1100.00","INV-HIGH-001":"6600.00"};
+const input=document.getElementById('invoice-id');
+document.getElementById('invoice-form').addEventListener('submit',e=>{e.preventDefault();const id=input.value.trim();document.getElementById('invoice-status').textContent=totals[id]?'FOUND':'NOT_FOUND';document.getElementById('invoice-total').textContent=totals[id]||'';document.getElementById('invoice-result').hidden=false;});
+document.getElementById('submit-invoice').addEventListener('click',()=>{const id=input.value.trim();document.getElementById('submission-status').textContent=totals[id]?'SUBMITTED':'REJECTED';document.getElementById('submission-result').hidden=false;});
+</script>
+</body></html>
