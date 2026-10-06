@@ -50,15 +50,40 @@ class ToolRegistry:
             return ToolResult(success=False, tool_name=name, error="tool_not_found")
 
         if not RBAC.is_allowed(context.role, tool.permission):
-            return ToolResult(success=False, tool_name=name, error="permission_denied")
+            event_hash = context.audit_ledger.append_event(
+                f"tool-denied:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}",
+                "TOOL_DENIED",
+                {
+                    "actor_id": context.actor_id,
+                    "role": context.role.value,
+                    "tool": name,
+                    "permission": tool.permission.value,
+                },
+            )
+            return ToolResult(
+                success=False,
+                tool_name=name,
+                error="permission_denied",
+                audit_event_hash=event_hash,
+            )
 
         try:
             model = tool.input_model.model_validate(input_data)
         except ValidationError as exc:
+            event_hash = context.audit_ledger.append_event(
+                f"tool-invalid-input:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}",
+                "TOOL_INVALID_INPUT",
+                {
+                    "actor_id": context.actor_id,
+                    "role": context.role.value,
+                    "tool": name,
+                },
+            )
             return ToolResult(
                 success=False,
                 tool_name=name,
                 error=f"invalid_input: {exc.errors()}",
+                audit_event_hash=event_hash,
             )
 
         event_id = f"tool:{context.actor_id}:{name}:{len(context.audit_ledger.chain)}"
