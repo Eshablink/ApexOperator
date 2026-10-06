@@ -14,11 +14,11 @@ class ExtractionError(ValueError):
 
 
 FIELD_PATTERNS = {
-    "invoice_id": re.compile(r"Invoice\s*ID\s*[:#-]\s*([A-Za-z0-9._-]+)", re.I),
-    "vendor_name": re.compile(r"Vendor\s*[:#-]\s*(.+)", re.I),
-    "subtotal": re.compile(r"Subtotal\s*[:#-]\s*([$]?[-0-9,.]+)", re.I),
-    "tax": re.compile(r"Tax\s*(?:Amount)?\s*[:#-]\s*([$]?[-0-9,.]+)", re.I),
-    "total": re.compile(r"Total\s*[:#-]\s*([$]?[-0-9,.]+)", re.I),
+    "invoice_id": re.compile(r"^Invoice\s*ID\s*[:#-]\s*([A-Za-z0-9._-]+)\s*$", re.I | re.M),
+    "vendor_name": re.compile(r"^Vendor\s*[:#-]\s*(.+?)\s*$", re.I | re.M),
+    "subtotal": re.compile(r"^Subtotal\s*[:#-]\s*([$]?[-0-9,.]+)\s*$", re.I | re.M),
+    "tax": re.compile(r"^Tax\s*(?:Amount)?\s*[:#-]\s*([$]?[-0-9,.]+)\s*$", re.I | re.M),
+    "total": re.compile(r"^Total\s*[:#-]\s*([$]?[-0-9,.]+)\s*$", re.I | re.M),
 }
 
 
