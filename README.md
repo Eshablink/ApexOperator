@@ -8,7 +8,18 @@ ApexOperator separates AI planning from deterministic authorization and executio
 
 ## Current status
 
-Phase 0 foundation is being established directly in this repository. Subsequent phases will be implemented only when their source code and tests are committed here.
+**Phase 0 — Foundation: implementation complete on branch `phase0-hardening`; CI verification is required before merge/phase lock.**
+
+This repository is the source of truth. Historical design reports and generated prompts are treated as specifications, not as proof of implementation.
+
+## Phase 0 scope
+
+- Installable Python package using a `src/apexoperator` layout.
+- Decimal-safe invoice domain model with rejection of native floats for money.
+- Deterministic invoice policy with exact `5000.00` auto-approval boundary.
+- Cryptographic SHA-256 audit chain with genesis linkage, event IDs, canonical payload hashing, and tamper detection.
+- Pytest coverage for boundary, validation, and audit-integrity cases.
+- GitHub Actions CI for Python 3.11.
 
 ## Engineering principles
 
@@ -22,7 +33,6 @@ Phase 0 foundation is being established directly in this repository. Subsequent 
 
 ## Planned capabilities
 
-- Deterministic invoice policy evaluation
 - RBAC and governed tools
 - Agent runtime with bounded execution
 - FastAPI API and human approval workflow
@@ -35,14 +45,13 @@ Phase 0 foundation is being established directly in this repository. Subsequent 
 
 ## Development
 
-Python 3.11+ is recommended.
-
-Run tests with:
+Python 3.11+ is required.
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 pytest -q
 ```
 
-## Status discipline
-
-A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI. Historical design reports are treated as specifications, not as proof of implementation.
+A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI.
