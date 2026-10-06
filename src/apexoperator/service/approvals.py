@@ -1,15 +1,15 @@
+from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException
 
-from typing import Any
-from apexoperator.security.rbac import Permission, RBAC, Role
+from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, Planner
+from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
+from apexoperator.security.auth import Principal
+from apexoperator.security.rbac import Permission, RBAC
 from apexoperator.tools.finance import FinanceToolset, build_finance_tools
 from apexoperator.tools.registry import ToolContext, ToolRegistry
-
-from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
-from apexoperator.security.auth import Principal
 
 
 class ApprovalService:
@@ -19,6 +19,7 @@ class ApprovalService:
         workspace_dir: str,
         task_store: SQLAlchemyTaskStore,
         audit_ledger: Any,
+        planner: Planner | None = None,
     ) -> None:
         self.task_store = task_store
         self.audit_ledger = audit_ledger
@@ -26,6 +27,7 @@ class ApprovalService:
         self.registry = ToolRegistry()
         for tool in build_finance_tools(finance):
             self.registry.register(tool)
+        self.runtime = AgentRuntime(self.registry, planner=planner)
 
     def _context(self, principal: Principal) -> ToolContext:
         return ToolContext(
@@ -34,25 +36,41 @@ class ApprovalService:
             audit_ledger=self.audit_ledger,
         )
 
+    @staticmethod
+    def _validation_result(state):
+        for result in reversed(state.history):
+            if result.tool_name == "validate_invoice" and result.success:
+                return result
+        return None
+
     def create_task(self, request: CreateTaskRequest, principal: Principal) -> TaskResponse:
         task_id = str(uuid4())
-        context = self._context(principal)
-
-        read_result = self.registry.execute_tool(
-            "read_invoice",
-            {"invoice_id": request.invoice_id},
-            context,
+        state = self.runtime.run(
+            AgentTaskRequest(
+                task_id=task_id,
+                intent="process_invoice",
+                invoice_id=request.invoice_id,
+                justification=request.justification,
+            ),
+            self._context(principal),
         )
-        if not read_result.success:
-            raise HTTPException(status_code=404, detail=read_result.error)
 
-        validation = self.registry.execute_tool(
-            "validate_invoice",
-            {"invoice_id": request.invoice_id},
-            context,
-        )
-        if not validation.success:
-            raise HTTPException(status_code=422, detail=validation.error)
+        validation = self._validation_result(state)
+        if state.status == "FAILED_PLANNER":
+            raise HTTPException(status_code=502, detail="planner unavailable")
+        if state.status == "FAILED_INVALID_PLAN":
+            raise HTTPException(status_code=422, detail="planner produced an invalid plan")
+        if validation is None:
+            first_failure = next(
+                (result for result in state.history if not result.success),
+                None,
+            )
+            if first_failure and first_failure.error and "not found" in first_failure.error:
+                raise HTTPException(status_code=404, detail=first_failure.error)
+            if first_failure and first_failure.error == "permission_denied":
+                raise HTTPException(status_code=403, detail="permission denied")
+            detail = first_failure.error if first_failure else state.status
+            raise HTTPException(status_code=422, detail=detail)
 
         decision = validation.data["decision"]
         status = (
@@ -64,16 +82,21 @@ class ApprovalService:
         )
 
         if status is TaskStatus.PENDING_HUMAN_APPROVAL:
-            approval = self.registry.execute_tool(
-                "submit_approval",
-                {
-                    "invoice_id": request.invoice_id,
-                    "justification": request.justification or "Policy escalation",
-                },
-                context,
+            approval = next(
+                (
+                    result
+                    for result in reversed(state.history)
+                    if result.tool_name == "submit_approval"
+                ),
+                None,
             )
-            if not approval.success:
-                raise HTTPException(status_code=422, detail=approval.error)
+            if approval is None or not approval.success:
+                if approval and approval.error == "permission_denied":
+                    raise HTTPException(status_code=403, detail="permission denied")
+                raise HTTPException(
+                    status_code=422,
+                    detail=approval.error if approval else "approval submission missing",
+                )
 
         self.task_store.create(
             task_id,
@@ -100,9 +123,7 @@ class ApprovalService:
         *,
         approve: bool,
     ) -> TaskResponse:
-        permission = (
-            Permission.APPROVAL_APPROVE if approve else Permission.APPROVAL_REJECT
-        )
+        permission = Permission.APPROVAL_APPROVE if approve else Permission.APPROVAL_REJECT
         if not RBAC.is_allowed(principal.role, permission):
             raise HTTPException(status_code=403, detail="permission denied")
 
@@ -117,7 +138,7 @@ class ApprovalService:
 
         target_status = TaskStatus.APPROVED if approve else TaskStatus.REJECTED
         event_type = "HUMAN_APPROVAL_GRANTED" if approve else "HUMAN_APPROVAL_REJECTED"
-        event_hash = self.audit_ledger.append_event(
+        self.audit_ledger.append_event(
             str(uuid4()),
             event_type,
             event_type.lower(),
