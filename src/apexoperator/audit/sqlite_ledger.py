@@ -75,9 +75,13 @@ class SQLiteAuditLedger:
                     head_event_hash TEXT NOT NULL
                 );
 
+                """
+            )
+            self.connection.execute(
+                """
                 INSERT OR IGNORE INTO audit_ledger_meta (
                     singleton, head_sequence_id, head_event_hash
-                ) VALUES (1, -1, ?);
+                ) VALUES (1, -1, ?)
                 """,
                 (GENESIS_HASH,),
             )
