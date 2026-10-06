@@ -98,6 +98,44 @@ class AgentRuntime:
         self.registry = registry
         self.planner = planner or MockPlanner()
 
+    @staticmethod
+    def _last_successful_validation(state: AgentTaskState) -> str | None:
+        for result in reversed(state.history):
+            if result.tool_name == "validate_invoice" and result.success:
+                return (result.data or {}).get("decision")
+        return None
+
+    def _plan_is_allowed(
+        self,
+        request: AgentTaskRequest,
+        state: AgentTaskState,
+        call: PlannedToolCall,
+    ) -> bool:
+        if call.tool_name not in self.registry.list_tools():
+            return False
+
+        requested_invoice = call.input_data.get("invoice_id")
+        if requested_invoice is not None and requested_invoice != request.invoice_id:
+            return False
+
+        if request.intent == "validate_invoice":
+            return state.steps == 0 and call.tool_name == "validate_invoice"
+
+        if request.intent != "process_invoice":
+            return False
+
+        if state.steps == 0:
+            return call.tool_name == "read_invoice"
+        if state.steps == 1:
+            return call.tool_name == "validate_invoice"
+        if state.steps == 2:
+            decision = self._last_successful_validation(state)
+            return (
+                decision == "HUMAN_ESCALATION_REQUIRED"
+                and call.tool_name == "submit_approval"
+            )
+        return False
+
     def _audit_failure(
         self,
         context: ToolContext,
@@ -148,16 +186,10 @@ class AgentRuntime:
                     state.status = "COMPLETED"
                     return state
 
-                if pending_call.tool_name not in self.registry.list_tools():
-                    return self._invalid_plan(
-                        state, f"unknown_tool:{pending_call.tool_name}", context
-                    )
-
-                requested_invoice = pending_call.input_data.get("invoice_id")
-                if requested_invoice is not None and requested_invoice != request.invoice_id:
+                if not self._plan_is_allowed(request, state, pending_call):
                     return self._invalid_plan(
                         state,
-                        "invoice_id_mismatch",
+                        f"disallowed_plan:{pending_call.tool_name}",
                         context,
                     )
 
