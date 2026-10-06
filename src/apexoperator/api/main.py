@@ -3,6 +3,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from apexoperator.observability.logging import configure_logging, log_request
+
 from apexoperator.api.schemas import (
     ApprovalRequest,
     AuditVerificationResponse,
@@ -46,10 +48,24 @@ def create_app(
         audit_ledger=audit_ledger,
     )
 
+    logger = configure_logging()
     api = FastAPI(title="ApexOperator API", version="0.2.0")
     api.state.authenticator = authenticator
     api.state.service = service
     api.state.engine = engine
+
+    @api.middleware("http")
+    async def request_logging(request: Request, call_next):
+        started = __import__("time").perf_counter()
+        response = await call_next(request)
+        log_request(
+            logger,
+            request.method,
+            request.url.path,
+            response.status_code,
+            (__import__("time").perf_counter() - started) * 1000,
+        )
+        return response
 
     def principal(request: Request) -> Principal:
         authorization = request.headers.get("Authorization")
