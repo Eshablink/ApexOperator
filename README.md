@@ -1,50 +1,128 @@
 # ApexOperator
 
-A production-oriented autonomous business operations engine for controlled financial workflows.
+**A production-oriented agentic operations engine for controlled financial workflows.**
 
-ApexOperator separates AI planning from deterministic authorization and execution:
+ApexOperator is built around one core idea:
 
-`AI Planner → Tool Registry → RBAC → Deterministic Policy → Human Gate → Execution → Cryptographic Audit`
+> **Let AI reason about work, but never let AI alone authorize financial consequences.**
 
-## Current status
+The system separates planning from governed execution:
 
-**Phase 0 — Foundation: locked after successful CI.**  
-**Phase 1 — Persistent audit: locked after successful CI.**  
-**Phase 2 — Agent runtime + RBAC: locked after successful CI.**  
-**Phase 3 — FastAPI + human approval API: locked after successful CI.**  
-**Phase 4 — Playwright browser automation: locked after successful CI.**  
-**Phase 5 — Security evaluation: locked after successful CI.**  
-**Phase 6 — Document intelligence: locked after successful CI.**  
-**Phase 7 — Production persistence + dashboard: implementation on branch `phase7-production-postgres`; CI verification is required before phase lock.**
+`AI Planner → Tool Registry → RBAC → Deterministic Policy → Human Gate → Execution → Persistent Cryptographic Audit`
 
-This repository is the source of truth. Historical design reports and generated prompts are treated as specifications, not as proof of implementation.
+## Why this project matters
 
-## Implemented capabilities
+Most agent demos stop at “the model called a tool.” ApexOperator focuses on the harder engineering problem: **how an agent can operate in a sensitive workflow while remaining bounded, observable, auditable, and safe to interrupt.**
 
-- Decimal-safe invoice domain model and deterministic policy enforcement.
-- Persistent SQLite and SQLAlchemy-backed database stores.
-- Cryptographic audit chains with duplicate-event protection and tamper detection.
-- Server-resolved RBAC and a governed Tool Registry.
-- Bounded Agent Runtime with deterministic retry limits.
-- FastAPI task workflow with explicit human approval/rejection.
-- Playwright browser automation with selector fallbacks and post-action verification.
-- PDF invoice extraction, confidence classification, and provider-neutral OCR boundary.
-- PostgreSQL persistence path with CI integration coverage.
-- Secured operational dashboard and readiness endpoint.
-- Adversarial security/evaluation tests.
+The project demonstrates:
 
-## Engineering principles
+- Decimal-safe financial models and deterministic policy enforcement.
+- Server-resolved RBAC with explicit permissions.
+- A central Tool Registry that governs tool execution.
+- Bounded planning with retry and step limits.
+- Real human approval and rejection workflow.
+- Playwright browser automation with deterministic selector fallbacks and post-action verification.
+- PDF invoice extraction with confidence classification and a provider-neutral OCR boundary.
+- SQLite/PostgreSQL persistence through SQLAlchemy.
+- A tamper-evident SHA-256 audit chain.
+- Adversarial security and evaluation tests.
+- Structured JSON request logging and readiness checks.
 
-- LLM output is untrusted and never acts as an authorization boundary.
-- Financial calculations use deterministic application logic and Decimal-safe values.
-- Sensitive tool execution passes through a governed registry and RBAC.
-- Human approval is explicit for policy-defined exceptions.
-- Execution is bounded and auditable.
-- Browser automation requires post-action verification.
-- Audit integrity is cryptographically verifiable.
-- Tests and CI are the source of truth for implementation status.
+## Current build status
 
-## Development
+**Phase 0 — Foundation: ✅ locked**  
+**Phase 1 — Persistent audit: ✅ locked**  
+**Phase 2 — Agent runtime + RBAC: ✅ locked**  
+**Phase 3 — FastAPI + human approval API: ✅ locked**  
+**Phase 4 — Playwright browser automation: ✅ locked**  
+**Phase 5 — Security evaluation: ✅ locked**  
+**Phase 6 — Document intelligence: ✅ locked**  
+**Phase 7 — Production persistence + dashboard: ✅ locked**
+
+Every phase was merged only after GitHub Actions verification.
+
+## Architecture
+
+```text
+                    ┌───────────────────────┐
+                    │      AI Planner       │
+                    │  intent + tool plan   │
+                    └───────────┬───────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │     Agent Runtime     │
+                    │ bounded steps/retries │
+                    └───────────┬───────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │     Tool Registry     │
+                    │ typed + centrally     │
+                    │ governed execution    │
+                    └───────────┬───────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │         RBAC          │
+                    │ role → permission     │
+                    └───────────┬───────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │ Deterministic Policy  │
+                    │ math + thresholds     │
+                    └───────────┬───────────┘
+                                ↓
+                 ┌──────────────┴───────────────┐
+                 ↓                              ↓
+      ┌────────────────────┐          ┌─────────────────────┐
+      │ Human Approval Gate│          │ Deterministic       │
+      │ approve / reject   │          │ recovery / failure  │
+      └──────────┬─────────┘          └──────────┬──────────┘
+                 └──────────────┬───────────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │ Execution             │
+                    │ API / browser / docs  │
+                    └───────────┬───────────┘
+                                ↓
+                    ┌───────────────────────┐
+                    │ Persistent Audit      │
+                    │ SHA-256 hash chain    │
+                    └───────────────────────┘
+```
+
+## Safety boundary
+
+ApexOperator intentionally does **not** treat the LLM as a trusted authorization layer.
+
+The LLM may propose:
+
+- what the user wants;
+- which governed tool could help;
+- how an exception could be explained or recovered.
+
+Deterministic application code decides:
+
+- financial calculations;
+- invoice consistency;
+- authorization;
+- approval thresholds;
+- state transitions;
+- retry/step limits;
+- audit persistence and verification.
+
+## Two-minute demo
+
+The fastest demo path is:
+
+1. Start the API.
+2. Submit a low-value invoice and show **AUTO_APPROVED**.
+3. Submit a high-value invoice and show **PENDING_HUMAN_APPROVAL**.
+4. Approve that exact pending task as a finance manager.
+5. Open the dashboard.
+6. Run `/audit/verify` and show the audit chain is valid.
+
+See **[docs/DEMO.md](docs/DEMO.md)** for the exact commands.
+
+## Local development
 
 Python 3.11+ is required.
 
@@ -55,10 +133,28 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-Run the API locally:
+Start the API:
 
 ```bash
 uvicorn apexoperator.api.main:create_app --factory --reload
 ```
 
-A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI.
+The development authentication mapping is intentionally local-only. It is not presented as production identity infrastructure.
+
+## Evidence
+
+- **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Engineering case study:** [docs/CASE_STUDY.md](docs/CASE_STUDY.md)
+- **Demo script:** [docs/DEMO.md](docs/DEMO.md)
+- **Security model:** [docs/SECURITY.md](docs/SECURITY.md)
+
+## Engineering principles
+
+- LLM output is untrusted.
+- Financial values use Decimal-safe representations.
+- Authorization is deterministic and server-side.
+- Tool execution is centrally governed.
+- Human approvals are tied to real pending state.
+- Browser actions require post-action verification.
+- Audit integrity is cryptographically verifiable.
+- Tests and CI are the source of truth.
