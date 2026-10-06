@@ -8,7 +8,10 @@ ApexOperator separates AI planning from deterministic authorization and executio
 
 ## Current status
 
-**Phase 0 — Foundation: implementation complete on branch `phase0-hardening`; CI verification is required before merge/phase lock.**
+**Phase 0 — Foundation: locked after successful CI.**  
+**Phase 1 — Persistent audit: locked after successful CI.**  
+**Phase 2 — Agent runtime + RBAC: locked after successful CI.**  
+**Phase 3 — FastAPI + human approval API: implementation on branch `phase3-fastapi-approval`; CI verification is required before merge/phase lock.**
 
 This repository is the source of truth. Historical design reports and generated prompts are treated as specifications, not as proof of implementation.
 
@@ -33,6 +36,7 @@ This repository is the source of truth. Historical design reports and generated 
 
 ## Planned capabilities
 
+- FastAPI API and human approval workflow
 - RBAC and governed tools
 - Agent runtime with bounded execution
 - FastAPI API and human approval workflow
@@ -54,4 +58,4 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI.
+A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI. The Phase 3 local API can be started with `uvicorn apexoperator.api.main:create_app --factory` after installing the project.
