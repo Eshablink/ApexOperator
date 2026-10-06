@@ -27,17 +27,27 @@ class PlannedToolCall(BaseModel):
 
 
 class Planner(Protocol):
-    def plan(self, request: AgentTaskRequest, state: AgentTaskState) -> PlannedToolCall | None:
+    def plan(
+        self, request: AgentTaskRequest, state: AgentTaskState
+    ) -> PlannedToolCall | None:
         ...
 
 
 class MockPlanner:
-    def plan(self, request: AgentTaskRequest, state: AgentTaskState) -> PlannedToolCall | None:
+    def plan(
+        self, request: AgentTaskRequest, state: AgentTaskState
+    ) -> PlannedToolCall | None:
         if request.intent == "process_invoice":
             if state.steps == 0:
-                return PlannedToolCall(tool_name="read_invoice", input_data={"invoice_id": request.invoice_id})
+                return PlannedToolCall(
+                    tool_name="read_invoice",
+                    input_data={"invoice_id": request.invoice_id},
+                )
             if state.steps == 1:
-                return PlannedToolCall(tool_name="validate_invoice", input_data={"invoice_id": request.invoice_id})
+                return PlannedToolCall(
+                    tool_name="validate_invoice",
+                    input_data={"invoice_id": request.invoice_id},
+                )
             if state.steps == 2:
                 return PlannedToolCall(
                     tool_name="submit_approval",
@@ -47,7 +57,10 @@ class MockPlanner:
                     },
                 )
         elif request.intent == "validate_invoice" and state.steps == 0:
-            return PlannedToolCall(tool_name="validate_invoice", input_data={"invoice_id": request.invoice_id})
+            return PlannedToolCall(
+                tool_name="validate_invoice",
+                input_data={"invoice_id": request.invoice_id},
+            )
         return None
 
 
@@ -61,19 +74,26 @@ class AgentRuntime:
 
     def run(self, request: AgentTaskRequest, context: ToolContext) -> AgentTaskState:
         state = AgentTaskState(task_id=request.task_id)
+        pending_call: PlannedToolCall | None = None
 
         while state.steps < self.MAX_STEPS:
-            call = self.planner.plan(request, state)
-            if call is None:
-                state.status = "COMPLETED"
-                return state
+            if pending_call is None:
+                pending_call = self.planner.plan(request, state)
+                if pending_call is None:
+                    state.status = "COMPLETED"
+                    return state
 
-            result = self.registry.execute_tool(call.tool_name, call.input_data, context)
+            result = self.registry.execute_tool(
+                pending_call.tool_name,
+                pending_call.input_data,
+                context,
+            )
             state.history.append(result)
             state.steps += 1
 
             if result.success:
                 state.retries = 0
+                pending_call = None
                 continue
 
             state.retries += 1
