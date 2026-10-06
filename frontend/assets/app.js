@@ -127,11 +127,20 @@ function renderTasks() {
 
     const action = document.createElement("td");
     if (task.status === "PENDING_HUMAN_APPROVAL") {
-      const btn = document.createElement("button");
-      btn.className = "table-action";
-      btn.textContent = "Review";
-      btn.addEventListener("click", () => reviewTask(task.task_id, true));
-      action.appendChild(btn);
+      const approve = document.createElement("button");
+      approve.className = "table-action";
+      approve.textContent = "Approve";
+      approve.addEventListener("click", () => reviewTask(task.task_id, true));
+
+      const reject = document.createElement("button");
+      reject.className = "table-action reject";
+      reject.textContent = "Reject";
+      reject.addEventListener("click", () => reviewTask(task.task_id, false));
+
+      const actions = document.createElement("div");
+      actions.className = "table-actions";
+      actions.append(approve, reject);
+      action.appendChild(actions);
     } else {
       action.textContent = "—";
     }
@@ -219,7 +228,8 @@ async function reviewTask(taskId, approve) {
   }
 }
 
-$$("[id^=launch]").forEach(btn => btn.addEventListener("click", openConsole));
+$("#launchTop").addEventListener("click", openConsole);
+$("#launchHero").addEventListener("click", openConsole);
 $("#launchConsole").addEventListener("click", openConsole);
 $("#closeConsole").addEventListener("click", closeConsole);
 $("#closeAuth").addEventListener("click", closeAuth);
