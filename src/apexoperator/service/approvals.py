@@ -118,9 +118,10 @@ class ApprovalService:
         target_status = TaskStatus.APPROVED if approve else TaskStatus.REJECTED
         event_type = "HUMAN_APPROVAL_GRANTED" if approve else "HUMAN_APPROVAL_REJECTED"
         event_hash = self.audit_ledger.append_event(
-            event_id=str(uuid4()),
-            event_type=event_type,
-            payload={
+            str(uuid4()),
+            event_type,
+            event_type.lower(),
+            {
                 "task_id": task_id,
                 "invoice_id": row["invoice_id"],
                 "reviewer": principal.actor_id,
