@@ -3,6 +3,7 @@ import socket
 import subprocess
 import sys
 import time
+import json
 import urllib.request
 from pathlib import Path
 
@@ -61,6 +62,24 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
         base = f"http://127.0.0.1:{port}"
         _wait_ready(f"{base}/health", process)
 
+        # Seed a pending high-value task as the AP clerk; the manager UI then reviews it.
+        request = urllib.request.Request(
+            f"{base}/tasks",
+            data=json.dumps({
+                "invoice_id": "INV-HIGH-001",
+                "justification": "Threshold review",
+            }).encode("utf-8"),
+            headers={
+                "Authorization": "Bearer dev-clerk-token",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
+            assert response.status == 200
+            seeded = json.load(response)
+        assert seeded["status"] == "PENDING_HUMAN_APPROVAL"
+
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 900})
@@ -73,12 +92,8 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             page.get_by_role("button", name="Finance Manager").click()
             expect(page.locator("#apiPill")).to_contain_text("API READY")
 
-            page.locator("#invoiceInput").fill("INV-HIGH-001")
-            page.locator("#justificationInput").fill("Threshold review")
-            page.get_by_role("button", name="Run governed workflow").click()
-
-            expect(page.locator(".toast.success", has_text="HUMAN GATE")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
+            expect(page.locator(".mini-tag.pending").first).to_contain_text("PENDING HUMAN APPROVAL")
 
             page.get_by_role("button", name="Approve").first.click()
             expect(page.locator(".toast.success", has_text="APPROVED")).to_be_visible()
