@@ -2,13 +2,13 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from apexoperator.audit.ledger import CryptographicAuditLedger
+from typing import Any
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.tools.finance import FinanceToolset, build_finance_tools
 from apexoperator.tools.registry import ToolContext, ToolRegistry
 
 from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
-from apexoperator.persistence.tasks import TaskStore
+from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
 from apexoperator.security.auth import Principal
 
 
@@ -17,8 +17,8 @@ class ApprovalService:
         self,
         *,
         workspace_dir: str,
-        task_store: TaskStore,
-        audit_ledger: CryptographicAuditLedger,
+        task_store: SQLAlchemyTaskStore,
+        audit_ledger: Any,
     ) -> None:
         self.task_store = task_store
         self.audit_ledger = audit_ledger
