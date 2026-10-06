@@ -1,4 +1,4 @@
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -33,6 +33,21 @@ class Planner(Protocol):
         ...
 
 
+AllowedToolName = Literal[
+    "read_invoice",
+    "validate_invoice",
+    "recalculate_invoice",
+    "submit_approval",
+    "verify_audit",
+]
+
+
+class PlannerDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tool_name: AllowedToolName | None = None
+    input_data: dict[str, Any] = Field(default_factory=dict)
+
+
 class MockPlanner:
     def plan(
         self, request: AgentTaskRequest, state: AgentTaskState
@@ -49,13 +64,24 @@ class MockPlanner:
                     input_data={"invoice_id": request.invoice_id},
                 )
             if state.steps == 2:
-                return PlannedToolCall(
-                    tool_name="submit_approval",
-                    input_data={
-                        "invoice_id": request.invoice_id,
-                        "justification": request.justification or "Policy escalation",
-                    },
+                validation = next(
+                    (
+                        item
+                        for item in reversed(state.history)
+                        if item.tool_name == "validate_invoice" and item.success
+                    ),
+                    None,
                 )
+                decision = (validation.data or {}).get("decision") if validation else None
+                if decision == "HUMAN_ESCALATION_REQUIRED":
+                    return PlannedToolCall(
+                        tool_name="submit_approval",
+                        input_data={
+                            "invoice_id": request.invoice_id,
+                            "justification": request.justification or "Policy escalation",
+                        },
+                    )
+                return None
         elif request.intent == "validate_invoice" and state.steps == 0:
             return PlannedToolCall(
                 tool_name="validate_invoice",
@@ -72,16 +98,56 @@ class AgentRuntime:
         self.registry = registry
         self.planner = planner or MockPlanner()
 
+    def _invalid_plan(self, state: AgentTaskState, reason: str, context: ToolContext) -> AgentTaskState:
+        state.status = "FAILED_INVALID_PLAN"
+        context.audit_ledger.append_event(
+            f"planner-invalid:{state.task_id}:{state.steps}",
+            "PLANNER_INVALID",
+            "planner_invalid",
+            {
+                "task_id": state.task_id,
+                "reason": reason,
+            },
+        )
+        return state
+
     def run(self, request: AgentTaskRequest, context: ToolContext) -> AgentTaskState:
         state = AgentTaskState(task_id=request.task_id)
         pending_call: PlannedToolCall | None = None
 
         while state.steps < self.MAX_STEPS:
             if pending_call is None:
-                pending_call = self.planner.plan(request, state)
+                try:
+                    pending_call = self.planner.plan(request, state)
+                except Exception as exc:
+                    state.status = "FAILED_PLANNER"
+                    context.audit_ledger.append_event(
+                        f"planner-failed:{request.task_id}:{state.steps}",
+                        "PLANNER_FAILED",
+                        "planner_failed",
+                        {
+                            "task_id": request.task_id,
+                            "error_type": type(exc).__name__,
+                        },
+                    )
+                    return state
+
                 if pending_call is None:
                     state.status = "COMPLETED"
                     return state
+
+                if pending_call.tool_name not in self.registry.list_tools():
+                    return self._invalid_plan(
+                        state, f"unknown_tool:{pending_call.tool_name}", context
+                    )
+
+                requested_invoice = pending_call.input_data.get("invoice_id")
+                if requested_invoice is not None and requested_invoice != request.invoice_id:
+                    return self._invalid_plan(
+                        state,
+                        "invoice_id_mismatch",
+                        context,
+                    )
 
             result = self.registry.execute_tool(
                 pending_call.tool_name,
