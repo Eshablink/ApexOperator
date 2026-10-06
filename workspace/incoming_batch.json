@@ -1,0 +1,25 @@
+{
+  "invoices": [
+    {
+      "invoice_id": "INV-LOW-001",
+      "vendor_name": "Acme Supplies",
+      "subtotal": "1200.00",
+      "tax": "216.00",
+      "total": "1416.00"
+    },
+    {
+      "invoice_id": "INV-HIGH-001",
+      "vendor_name": "Enterprise Systems",
+      "subtotal": "6000.00",
+      "tax": "600.00",
+      "total": "6600.00"
+    },
+    {
+      "invoice_id": "INV-BAD-001",
+      "vendor_name": "Integrity Check Vendor",
+      "subtotal": "1000.00",
+      "tax": "18.00",
+      "total": "999.00"
+    }
+  ]
+}
