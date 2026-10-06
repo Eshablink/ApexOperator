@@ -1,9 +1,9 @@
 import json
 
-from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest
+from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, AgentTaskState, PlannedToolCall
 from apexoperator.audit.ledger import CryptographicAuditLedger
 from apexoperator.security.rbac import Permission, RBAC, Role
-from apexoperator.tools.finance import FinanceToolset, InvoiceIdInput, SubmitApprovalInput
+from apexoperator.tools.finance import FinanceToolset, build_finance_tools
 from apexoperator.tools.registry import RegisteredTool, ToolContext, ToolRegistry
 
 
@@ -36,18 +36,8 @@ def make_registry(tmp_path):
     )
     finance = FinanceToolset(workspace)
     registry = ToolRegistry()
-    registry.register(RegisteredTool(
-        "read_invoice", InvoiceIdInput, Permission.INVOICE_READ,
-        lambda model, _ctx: finance.read_invoice(model),
-    ))
-    registry.register(RegisteredTool(
-        "validate_invoice", InvoiceIdInput, Permission.INVOICE_VALIDATE,
-        lambda model, _ctx: finance.validate_invoice(model),
-    ))
-    registry.register(RegisteredTool(
-        "submit_approval", SubmitApprovalInput, Permission.APPROVAL_SUBMIT,
-        lambda model, _ctx: finance.submit_approval(model),
-    ))
+    for tool in build_finance_tools(finance):
+        registry.register(tool)
     return registry
 
 
@@ -59,26 +49,28 @@ def test_system_admin_has_all_permissions():
     assert all(RBAC.is_allowed(Role.SYSTEM_ADMIN, permission) for permission in Permission)
 
 
-def test_registry_blocks_unauthorized_tool(tmp_path):
+def test_registry_blocks_unauthorized_tool_and_audits_denial(tmp_path):
     registry = make_registry(tmp_path)
+    context = make_context(Role.FINANCE_MANAGER)
     result = registry.execute_tool(
         "submit_approval",
         {"invoice_id": "INV-001", "justification": "threshold"},
-        make_context(Role.FINANCE_MANAGER),
+        context,
     )
     assert result.success is False
     assert result.error == "permission_denied"
+    assert result.audit_event_hash is not None
+    assert context.audit_ledger.verify_integrity() is True
 
 
-def test_registry_validates_typed_input(tmp_path):
+def test_registry_validates_typed_input_and_audits_invalid_call(tmp_path):
     registry = make_registry(tmp_path)
-    result = registry.execute_tool(
-        "read_invoice",
-        {"invoice_id": ""},
-        make_context(),
-    )
+    context = make_context()
+    result = registry.execute_tool("read_invoice", {"invoice_id": ""}, context)
     assert result.success is False
     assert result.error.startswith("invalid_input:")
+    assert context.audit_ledger.verify_integrity() is True
+    assert len(context.audit_ledger.chain) == 1
 
 
 def test_successful_tool_is_audited(tmp_path):
@@ -89,6 +81,25 @@ def test_successful_tool_is_audited(tmp_path):
     assert result.data["total"] == "6600.00"
     assert context.audit_ledger.verify_integrity() is True
     assert len(context.audit_ledger.chain) == 1
+
+
+def test_finance_toolset_registers_expected_tools(tmp_path):
+    registry = make_registry(tmp_path)
+    assert registry.list_tools() == (
+        "read_invoice",
+        "recalculate_invoice",
+        "submit_approval",
+        "validate_invoice",
+        "verify_audit",
+    )
+
+
+def test_manager_can_verify_audit(tmp_path):
+    registry = make_registry(tmp_path)
+    context = make_context(Role.FINANCE_MANAGER)
+    result = registry.execute_tool("verify_audit", {}, context)
+    assert result.success is True
+    assert result.data == {"integrity_valid": True}
 
 
 def test_runtime_is_bounded_and_processes_invoice(tmp_path):
@@ -108,3 +119,27 @@ def test_runtime_is_bounded_and_processes_invoice(tmp_path):
     assert all(result.success for result in state.history)
     assert context.audit_ledger.verify_integrity() is True
     assert len(context.audit_ledger.chain) == 3
+
+
+class AlwaysFailPlanner:
+    def plan(self, request, state):
+        return PlannedToolCall(
+            tool_name="missing_tool",
+            input_data={},
+        )
+
+
+def test_runtime_stops_after_retry_limit(tmp_path):
+    registry = make_registry(tmp_path)
+    context = make_context()
+    state = AgentRuntime(registry, planner=AlwaysFailPlanner()).run(
+        AgentTaskRequest(
+            task_id="TASK-002",
+            intent="anything",
+            invoice_id="INV-001",
+        ),
+        context,
+    )
+    assert state.status == "FAILED_RETRY_LIMIT"
+    assert state.steps == 3
+    assert state.retries == 3
