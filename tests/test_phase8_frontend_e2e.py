@@ -77,11 +77,11 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             page.locator("#justificationInput").fill("Threshold review")
             page.get_by_role("button", name="Run governed workflow").click()
 
-            expect(page.locator(".toast.success").first).to_contain_text("HUMAN GATE")
+            expect(page.locator(".toast.success", has_text="HUMAN GATE")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
 
             page.get_by_role("button", name="Approve").first.click()
-            expect(page.locator(".toast.success").first).to_contain_text("APPROVED")
+            expect(page.locator(".toast.success", has_text="APPROVED")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("APPROVED")
 
             browser.close()
