@@ -2,7 +2,7 @@ import re
 from decimal import Decimal
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 from apexoperator.documents.ocr import OCRProvider
 from apexoperator.documents.schemas import InvoiceExtraction
@@ -54,9 +54,8 @@ class InvoiceDocumentExtractor:
     def extract_pdf(self, content: bytes) -> InvoiceExtraction:
         validate_magic("application/pdf", content)
         try:
-            document = fitz.open(stream=content, filetype="pdf")
-            text = "
-".join(page.get_text("text") for page in document)
+            document = pymupdf.open(stream=content, filetype="pdf")
+            text = "\n".join(page.get_text("text") for page in document)
             document.close()
         except Exception as exc:
             raise ExtractionError("malformed or unreadable PDF") from exc
