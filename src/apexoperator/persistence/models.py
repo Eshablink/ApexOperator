@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import JSON, DateTime, Integer, String, Text
@@ -19,7 +20,11 @@ class TaskRecord(Base):
     justification: Mapped[str | None] = mapped_column(Text)
     reviewer: Mapped[str | None] = mapped_column(String(128))
     review_comment: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[str] = mapped_column(
+        String(64),
+        default=lambda: datetime.now(timezone.utc).isoformat(),
+        nullable=False,
+    )
 
 
 class AuditEventRecord(Base):
