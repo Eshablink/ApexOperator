@@ -60,10 +60,24 @@ class SQLAlchemyAuditLedger:
     def _hash_event(cls, event: dict[str, Any]) -> str:
         return hashlib.sha256(cls._canonical(event)).hexdigest()
 
-    def append_event(self, event_id: str, event_type: str, action: str, after_state: dict[str, Any]) -> str:
+    def append_event(
+        self,
+        event_id: str,
+        event_type: str,
+        action_or_payload: str | dict[str, Any],
+        after_state: dict[str, Any] | None = None,
+    ) -> str:
         event_id = event_id.strip()
         event_type = event_type.strip()
-        action = action.strip()
+        if after_state is None and isinstance(action_or_payload, dict):
+            action = "event"
+            after_state = action_or_payload
+        elif after_state is not None and isinstance(action_or_payload, str):
+            action = action_or_payload.strip()
+        else:
+            raise ValueError("audit action/payload arguments are invalid")
+        if not action:
+            raise ValueError("audit action cannot be empty")
         if not event_id or not event_type or not action:
             raise ValueError("event identifiers and action cannot be empty")
 
