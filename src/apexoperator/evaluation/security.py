@@ -6,7 +6,7 @@ from apexoperator.persistence.tasks import TaskStore
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.tools.registry import RegisteredTool, ToolContext, ToolRegistry
 from apexoperator.tools.finance import FinanceToolset, InvoiceIdInput, build_finance_tools
-from apexoperator.portal.tools import PortalInvoiceInput
+from apexoperator.audit.sqlite_ledger import SQLiteAuditLedger
 
 
 def _workspace(tmp_path: Path) -> Path:
@@ -105,6 +105,16 @@ def run_security_evaluation(tmp_path: Path) -> list[str]:
         review_comment="bypass",
     ):
         failures.append("invalid_state_transition_allowed")
+
+    persistent = SQLiteAuditLedger(tmp_path / "persistent-audit.sqlite3")
+    persistent.append_event("P1", "TEST", "seed", {"value": 1})
+    persistent.append_event("P2", "TEST", "seed", {"value": 2})
+    persistent.connection.execute(
+        "DELETE FROM audit_events WHERE sequence_id = 1"
+    )
+    if persistent.verify_integrity():
+        failures.append("persistent_audit_deletion_not_detected")
+    persistent.close()
 
     task_store.close()
     return failures
