@@ -1,18 +1,25 @@
 from decimal import Decimal
+from enum import Enum
+
 from apexoperator.domain.invoice import Invoice
 
-AUTO_APPROVAL_LIMIT = Decimal("5000.00")
 
-class PolicyDecision:
-    def __init__(self, decision: str, reason: str):
-        self.decision = decision
-        self.reason = reason
+class PolicyDecision(str, Enum):
+    AUTO_APPROVED = "AUTO_APPROVED"
+    HUMAN_ESCALATION_REQUIRED = "HUMAN_ESCALATION_REQUIRED"
+    REJECTED = "REJECTED"
+
 
 class DeterministicPolicyEngine:
-    def evaluate(self, invoice: Invoice) -> PolicyDecision:
-        expected_total = invoice.subtotal + invoice.tax
-        if invoice.total != expected_total:
-            return PolicyDecision("RECALCULATE_AND_APPROVE", "Invoice total does not equal subtotal plus tax.")
-        if invoice.total <= AUTO_APPROVAL_LIMIT:
-            return PolicyDecision("AUTO_APPROVE", "Invoice is within the automatic approval limit.")
-        return PolicyDecision("HUMAN_ESCALATION_REQUIRED", "Invoice exceeds the automatic approval limit.")
+    AUTO_APPROVAL_THRESHOLD = Decimal("5000.00")
+
+    @classmethod
+    def evaluate_invoice(cls, invoice: Invoice) -> PolicyDecision:
+        calculated_total = invoice.subtotal + invoice.tax
+        if invoice.total != calculated_total:
+            return PolicyDecision.REJECTED
+
+        if invoice.total > cls.AUTO_APPROVAL_THRESHOLD:
+            return PolicyDecision.HUMAN_ESCALATION_REQUIRED
+
+        return PolicyDecision.AUTO_APPROVED
