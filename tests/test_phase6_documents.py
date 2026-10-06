@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-import fitz
+import pymupdf
 import pytest
 from pydantic import ValidationError
 
@@ -10,7 +10,7 @@ from apexoperator.documents.security import DocumentSecurityError, secure_docume
 
 
 def pdf_bytes(text: str) -> bytes:
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page()
     page.insert_text((72, 72), text)
     data = doc.tobytes()
