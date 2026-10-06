@@ -16,6 +16,19 @@ The model is allowed to operate only through typed, registered tools. Financial 
 
 The runtime executes bounded plans. The current implementation enforces a maximum step count and retry count so a faulty or adversarial plan cannot run indefinitely.
 
+### Planner modes
+
+ApexOperator can use a deterministic local planner or an optional OpenAI-backed planner.
+
+The OpenAI planner returns a typed `PlannerDecision` through the Responses API. The planner is still treated as untrusted reasoning output: the Agent Runtime checks whether the proposed action is valid for the current workflow state before the Tool Registry can execute it.
+
+The runtime therefore has two layers of control:
+
+1. The planner chooses a candidate next action.
+2. Deterministic runtime rules decide whether that action is admissible.
+
+The live planner does not receive authorization authority from being an LLM.
+
 ### Tool Registry
 
 Every sensitive capability is represented as a registered tool with:
