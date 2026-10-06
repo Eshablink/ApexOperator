@@ -159,11 +159,24 @@ async function loadLive() {
     renderKpis();
     renderTasks();
     updateAudit(data.audit_ok);
+    updatePlanner(data.planner);
   } catch (error) {
     setApiHealth(false);
     if (state.token) toast(error.message, "error");
     $("#recordHint").textContent = "Unable to load live operations";
   }
+}
+
+function updatePlanner(planner) {
+  const pill = $("#plannerPill");
+  if (!planner) {
+    pill.textContent = "PLANNER · UNKNOWN";
+    return;
+  }
+  const mode = String(planner.mode || "mock").toUpperCase();
+  const detail = mode === "OPENAI" && planner.model ? ` · ${planner.model}` : "";
+  pill.textContent = `PLANNER · ${mode}${detail}`;
+  pill.title = `Bounded runtime: ${planner.max_steps} steps · ${planner.max_retries} retries`;
 }
 
 function updateAudit(ok) {
