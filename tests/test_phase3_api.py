@@ -51,9 +51,11 @@ def auth(token):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_health():
-    client = make_client(__import__("pathlib").Path("/tmp")) if False else None
-    assert client is None
+def test_health(tmp_path):
+    client = make_client(tmp_path)
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_create_high_value_task_creates_real_pending_approval(tmp_path):
