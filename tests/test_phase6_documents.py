@@ -89,7 +89,7 @@ def test_ocr_boundary_is_explicit():
                 "Subtotal: 200.00\nTax: 36.00\nTotal: 236.00\n"
             )
 
-    blank = fitz.open()
+    blank = pymupdf.open()
     blank.new_page()
     content = blank.tobytes()
     blank.close()
