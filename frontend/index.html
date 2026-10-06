@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070a12">
+  <meta name="description" content="ApexOperator — governed AI for high-consequence business operations.">
+  <title>ApexOperator — AI Operations Control Room</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="ApexOperator home">
+      <span class="brand-mark"><span></span><span></span><span></span></span>
+      <span>ApexOperator</span>
+    </a>
+    <nav class="top-nav" aria-label="Primary">
+      <a href="#system">System</a>
+      <a href="#controls">Controls</a>
+      <a href="#console">Console</a>
+      <button class="nav-cta" id="launchTop">Launch console <span>↗</span></button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse-dot"></span> GOVERNED AI OPERATIONS</div>
+        <h1>AI that <em>reasons.</em><br>Software that <strong>governs.</strong></h1>
+        <p class="hero-lede">
+          ApexOperator is a controlled digital worker for sensitive business workflows —
+          designed to plan with AI while keeping authorization, policy, execution and evidence deterministic.
+        </p>
+        <div class="hero-actions">
+          <button class="primary-btn" id="launchHero">Open live control room <span>→</span></button>
+          <a class="secondary-btn" href="#system">Explore architecture</a>
+        </div>
+        <div class="hero-proof">
+          <span><i>✓</i> Bounded runtime</span>
+          <span><i>✓</i> Human approval gates</span>
+          <span><i>✓</i> Tamper-evident audit</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="Illustration of governed agent execution">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="glow-card">
+          <div class="mini-top">
+            <span class="mini-label">LIVE WORKFLOW</span>
+            <span class="live-chip"><b></b> SAFE TO EXECUTE</span>
+          </div>
+          <div class="invoice-card">
+            <div class="invoice-icon">₹</div>
+            <div class="invoice-meta">
+              <span>INV-HIGH-001</span>
+              <strong>Enterprise Systems</strong>
+              <small>₹6,600.00 · Threshold review</small>
+            </div>
+            <span class="status-chip pending">Human gate</span>
+          </div>
+          <div class="flow-stack">
+            <div class="flow-step done"><span>01</span><b>Understand intent</b><i>✓</i></div>
+            <div class="flow-line active"></div>
+            <div class="flow-step done"><span>02</span><b>Validate + policy</b><i>✓</i></div>
+            <div class="flow-line active"></div>
+            <div class="flow-step waiting"><span>03</span><b>Human approval</b><i>•••</i></div>
+            <div class="flow-line"></div>
+            <div class="flow-step muted"><span>04</span><b>Execute + verify</b><i>—</i></div>
+          </div>
+          <div class="hash-strip"><span>SHA-256 AUDIT CHAIN</span><code>7e31…a92c</code><i>VALID</i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="metric-strip section-shell" aria-label="Architecture highlights">
+      <div><strong>5</strong><span>bounded agent steps</span></div>
+      <div><strong>2</strong><span>retry ceiling</span></div>
+      <div><strong>100%</strong><span>server-side authorization</span></div>
+      <div><strong>1</strong><span>governed execution choke point</span></div>
+    </section>
+
+    <section class="section-shell architecture" id="system">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">THE SYSTEM</div>
+          <h2>From intent to evidence —<br><span>without trusting the model with authority.</span></h2>
+        </div>
+        <p>The architecture makes the safety boundary visible, testable and boringly deterministic where it matters most.</p>
+      </div>
+
+      <div class="architecture-grid">
+        <div class="arch-path">
+          <div class="arch-node ai">
+            <span class="node-kicker">01 · REASON</span>
+            <h3>AI Planner</h3>
+            <p>Understands intent and proposes the next governed action.</p>
+            <small>Untrusted input</small>
+          </div>
+          <div class="connector">↓</div>
+          <div class="arch-node governed">
+            <span class="node-kicker">02 · GOVERN</span>
+            <h3>Tool Registry + RBAC</h3>
+            <p>Typed tools, permissions and execution boundaries are enforced here.</p>
+            <small>Trusted boundary</small>
+          </div>
+          <div class="connector">↓</div>
+          <div class="arch-node policy">
+            <span class="node-kicker">03 · DECIDE</span>
+            <h3>Deterministic Policy</h3>
+            <p>Money math, thresholds and state rules are application code — not prompts.</p>
+            <small>Authoritative rules</small>
+          </div>
+        </div>
+
+        <div class="boundary-panel">
+          <div class="boundary-title">TRUST BOUNDARY</div>
+          <div class="boundary-row">
+            <div class="boundary-icon ai-icon">AI</div>
+            <div><strong>Can propose</strong><span>Intent · extraction · tool choice · recovery idea</span></div>
+          </div>
+          <div class="boundary-divider"></div>
+          <div class="boundary-row">
+            <div class="boundary-icon code-icon">{ }</div>
+            <div><strong>Must decide</strong><span>Authorization · calculations · policy · state · audit</span></div>
+          </div>
+          <div class="boundary-note">AI is useful precisely because it is not the security boundary.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-shell controls-section" id="controls">
+      <div class="section-heading compact">
+        <div>
+          <div class="eyebrow">CONTROL SURFACE</div>
+          <h2>High consequence work gets a <span>human gate.</span></h2>
+        </div>
+      </div>
+      <div class="control-cards">
+        <article class="control-card">
+          <span class="control-number">A</span>
+          <h3>Auto-approve</h3>
+          <p>Consistent invoices at or below the deterministic threshold move without unnecessary friction.</p>
+          <div class="rule-line"><b>≤ ₹5,000</b><span>CONSISTENT</span></div>
+        </article>
+        <article class="control-card featured">
+          <span class="control-number">B</span>
+          <h3>Human approval</h3>
+          <p>Higher-value work becomes a persisted approval state tied to the exact task.</p>
+          <div class="rule-line"><b>&gt; ₹5,000</b><span>REVIEW REQUIRED</span></div>
+        </article>
+        <article class="control-card">
+          <span class="control-number">C</span>
+          <h3>Reject</h3>
+          <p>Math or source inconsistency is rejected deterministically rather than guessed through.</p>
+          <div class="rule-line"><b>Mismatch</b><span>STOP</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-shell console-preview" id="console">
+      <div class="console-header">
+        <div>
+          <div class="eyebrow">OPERATIONS CONTROL ROOM</div>
+          <h2>See the work. Intervene when needed.</h2>
+        </div>
+        <button class="primary-btn small" id="launchConsole">Launch live console <span>→</span></button>
+      </div>
+      <div class="console-frame">
+        <div class="console-top">
+          <div class="console-brand"><span class="brand-mark tiny"><i></i><i></i><i></i></span> ApexOperator <span>/</span> Control Room</div>
+          <div class="console-health"><b></b> API READY <span>•</span> AUDIT VALID</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><span>Pending approval</span><strong>03</strong><i>needs attention</i></div>
+          <div class="kpi"><span>Auto approved</span><strong>18</strong><i>within policy</i></div>
+          <div class="kpi"><span>Approved</span><strong>07</strong><i>human reviewed</i></div>
+          <div class="kpi"><span>Rejected</span><strong>02</strong><i>policy mismatch</i></div>
+        </div>
+        <div class="table-preview">
+          <div class="table-head"><span>RECENT OPERATION</span><span>STATUS</span><span>RISK</span></div>
+          <div class="table-row"><span><b>INV-HIGH-001</b><small>Enterprise Systems · ₹6,600</small></span><em class="tag orange">HUMAN GATE</em><span class="risk high">HIGH</span></div>
+          <div class="table-row"><span><b>INV-LOW-041</b><small>Acme Supplies · ₹1,100</small></span><em class="tag green">AUTO APPROVED</em><span class="risk low">LOW</span></div>
+          <div class="table-row"><span><b>INV-ERR-009</b><small>Northstar Labs · total mismatch</small></span><em class="tag red">REJECTED</em><span class="risk med">MED</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="console-overlay" id="consoleOverlay" aria-hidden="true">
+    <div class="console-app">
+      <div class="app-sidebar">
+        <a class="brand app-brand" href="#top"><span class="brand-mark"><span></span><span></span><span></span></span><span>ApexOperator</span></a>
+        <div class="side-label">WORKSPACE</div>
+        <button class="side-link active"><span>⌘</span> Overview</button>
+        <button class="side-link" id="sideTasks"><span>▣</span> Operations</button>
+        <button class="side-link"><span>◈</span> Audit trail</button>
+        <div class="side-label">SYSTEM</div>
+        <button class="side-link"><span>⚙</span> Policies</button>
+        <button class="side-link"><span>◌</span> Runtime</button>
+        <div class="side-footer"><span class="avatar">FM</span><div><b>Finance Manager</b><small>Local demo access</small></div></div>
+      </div>
+      <div class="app-main">
+        <div class="app-topbar">
+          <div><span class="mobile-brand">APEXOPERATOR</span><span class="crumb">Operations <b>/</b> Overview</span></div>
+          <div class="app-actions"><span id="apiPill" class="health-pill"><b></b> Connecting…</span><button class="ghost-btn" id="logout">Clear session</button><button class="close-btn" id="closeConsole" aria-label="Close">×</button></div>
+        </div>
+
+        <div class="app-content">
+          <div class="app-welcome">
+            <div><span class="eyebrow">CONTROL ROOM</span><h2>Good to see you. <span>Work is under control.</span></h2><p>Governed agent execution across invoices, approvals, automation and evidence.</p></div>
+            <button class="primary-btn small" id="verifyBtn">Verify audit <span>✓</span></button>
+          </div>
+
+          <div class="live-kpis" id="liveKpis">
+            <div class="live-kpi"><span>Pending approval</span><strong>—</strong><small>Requires finance review</small></div>
+            <div class="live-kpi"><span>Auto approved</span><strong>—</strong><small>Within deterministic policy</small></div>
+            <div class="live-kpi"><span>Approved</span><strong>—</strong><small>Human reviewed</small></div>
+            <div class="live-kpi"><span>Rejected</span><strong>—</strong><small>Policy blocked</small></div>
+          </div>
+
+          <div class="workspace-grid">
+            <section class="operations-panel">
+              <div class="panel-toolbar">
+                <div><h3>Recent operations</h3><p id="recordHint">Loading persisted tasks…</p></div>
+                <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Filter invoice or task…" aria-label="Filter operations"><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
+              </div>
+              <div class="operation-table-wrap">
+                <table class="operation-table">
+                  <thead><tr><th>Operation</th><th>Status</th><th>Requested by</th><th>Reviewer</th><th></th></tr></thead>
+                  <tbody id="operationsBody"><tr><td colspan="5" class="loading-row">Loading live operations…</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="right-rail">
+              <section class="action-panel">
+                <div class="eyebrow">QUICK ACTION</div>
+                <h3>Process an invoice</h3>
+                <p>Run the governed workflow against the committed demo workspace.</p>
+                <label>Invoice ID<input id="invoiceInput" value="INV-LOW-001" autocomplete="off"></label>
+                <label>Justification<textarea id="justificationInput" placeholder="Why should this be processed?"></textarea></label>
+                <button class="primary-btn full" id="processBtn">Run governed workflow <span>→</span></button>
+                <small class="demo-note">Local demo data only · no real money movement</small>
+              </section>
+              <section class="integrity-panel" id="integrityPanel">
+                <div class="integrity-head"><span class="shield">✓</span><div><span>AUDIT INTEGRITY</span><strong id="auditStatus">Checking…</strong></div></div>
+                <div class="integrity-bar"><i></i></div>
+                <p>SHA-256 chained events make unauthorized payload, ordering or deletion changes detectable.</p>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-modal" id="authModal" aria-hidden="true">
+    <div class="auth-card">
+      <button class="close-btn modal-close" id="closeAuth">×</button>
+      <div class="auth-logo"><span class="brand-mark"><span></span><span></span><span></span></span></div>
+      <div class="eyebrow">LOCAL DEMO ACCESS</div>
+      <h2>Open the control room.</h2>
+      <p>This reference build uses development tokens so the full governed workflow can be demonstrated locally.</p>
+      <div class="role-grid">
+        <button class="role-card" data-token="dev-manager-token"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
+        <button class="role-card" data-token="dev-clerk-token"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
+        <button class="role-card" data-token="dev-admin-token"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+      </div>
+      <div class="auth-foot"><span>AUTH IS DEV-ONLY</span><span>No external identity provider configured</span></div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
