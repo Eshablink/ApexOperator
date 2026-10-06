@@ -40,7 +40,6 @@ def create_app(
         return {"status": "ok"}
 
     def principal(request: Request) -> Principal:
-        import base64
         from fastapi import HTTPException
 
         authorization = request.headers.get("Authorization")
