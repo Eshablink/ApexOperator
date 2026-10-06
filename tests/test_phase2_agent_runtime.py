@@ -124,8 +124,8 @@ def test_runtime_is_bounded_and_processes_invoice(tmp_path):
 class AlwaysFailPlanner:
     def plan(self, request, state):
         return PlannedToolCall(
-            tool_name="missing_tool",
-            input_data={},
+            tool_name="read_invoice",
+            input_data={"invoice_id": "DOES-NOT-EXIST"},
         )
 
 
