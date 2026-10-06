@@ -11,18 +11,27 @@ ApexOperator separates AI planning from deterministic authorization and executio
 **Phase 0 — Foundation: locked after successful CI.**  
 **Phase 1 — Persistent audit: locked after successful CI.**  
 **Phase 2 — Agent runtime + RBAC: locked after successful CI.**  
-**Phase 3 — FastAPI + human approval API: implementation on branch `phase3-fastapi-approval`; CI verification is required before merge/phase lock.**
+**Phase 3 — FastAPI + human approval API: locked after successful CI.**  
+**Phase 4 — Playwright browser automation: locked after successful CI.**  
+**Phase 5 — Security evaluation: locked after successful CI.**  
+**Phase 6 — Document intelligence: locked after successful CI.**  
+**Phase 7 — Production persistence + dashboard: implementation on branch `phase7-production-postgres`; CI verification is required before phase lock.**
 
 This repository is the source of truth. Historical design reports and generated prompts are treated as specifications, not as proof of implementation.
 
-## Phase 0 scope
+## Implemented capabilities
 
-- Installable Python package using a `src/apexoperator` layout.
-- Decimal-safe invoice domain model with rejection of native floats for money.
-- Deterministic invoice policy with exact `5000.00` auto-approval boundary.
-- Cryptographic SHA-256 audit chain with genesis linkage, event IDs, canonical payload hashing, and tamper detection.
-- Pytest coverage for boundary, validation, and audit-integrity cases.
-- GitHub Actions CI for Python 3.11.
+- Decimal-safe invoice domain model and deterministic policy enforcement.
+- Persistent SQLite and SQLAlchemy-backed database stores.
+- Cryptographic audit chains with duplicate-event protection and tamper detection.
+- Server-resolved RBAC and a governed Tool Registry.
+- Bounded Agent Runtime with deterministic retry limits.
+- FastAPI task workflow with explicit human approval/rejection.
+- Playwright browser automation with selector fallbacks and post-action verification.
+- PDF invoice extraction, confidence classification, and provider-neutral OCR boundary.
+- PostgreSQL persistence path with CI integration coverage.
+- Secured operational dashboard and readiness endpoint.
+- Adversarial security/evaluation tests.
 
 ## Engineering principles
 
@@ -31,21 +40,9 @@ This repository is the source of truth. Historical design reports and generated 
 - Sensitive tool execution passes through a governed registry and RBAC.
 - Human approval is explicit for policy-defined exceptions.
 - Execution is bounded and auditable.
+- Browser automation requires post-action verification.
 - Audit integrity is cryptographically verifiable.
 - Tests and CI are the source of truth for implementation status.
-
-## Planned capabilities
-
-- FastAPI API and human approval workflow
-- RBAC and governed tools
-- Agent runtime with bounded execution
-- FastAPI API and human approval workflow
-- Playwright browser automation with bounded recovery
-- PDF/OCR document intelligence
-- PostgreSQL persistence
-- Operations dashboard
-- Security/adversarial evaluation
-- Structured observability
 
 ## Development
 
@@ -58,4 +55,10 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI. The Phase 3 local API can be started with `uvicorn apexoperator.api.main:create_app --factory` after installing the project.
+Run the API locally:
+
+```bash
+uvicorn apexoperator.api.main:create_app --factory --reload
+```
+
+A phase is considered complete only when its implementation exists in this repository and its tests execute successfully in CI.
