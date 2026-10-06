@@ -90,3 +90,4 @@ The finished system is a compact reference implementation for controlled agentic
 - adversarial evaluation.
 
 It is intentionally presented as a production-oriented engineering foundation, not as a claim of complete enterprise compliance or unrestricted autonomous operation.
+\n## Product surface\n\nThe final build also exposes a polished landing experience and live operations control room so the engineering controls are visible rather than hidden behind API endpoints.\n

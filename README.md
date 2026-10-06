@@ -37,7 +37,8 @@ The project demonstrates:
 **Phase 4 — Playwright browser automation: ✅ locked**  
 **Phase 5 — Security evaluation: ✅ locked**  
 **Phase 6 — Document intelligence: ✅ locked**  
-**Phase 7 — Production persistence + dashboard: ✅ locked**
+**Phase 7 — Production persistence + dashboard: ✅ locked**  
+**Phase 8 — Live planner + polished product UI + container deployment: ✅ locked**
 
 Every phase was merged only after GitHub Actions verification.
 
@@ -109,6 +110,16 @@ Deterministic application code decides:
 - retry/step limits;
 - audit persistence and verification.
 
+## Live agent planner
+
+ApexOperator supports two planner modes:
+
+- **mock** — deterministic local planner for zero-credential demos and tests;
+- **openai** — optional LLM planner using the OpenAI Responses API with structured `PlannerDecision` output.
+
+Regardless of planner mode, the runtime deterministically enforces the allowed workflow sequence, invoice identity, step/retry bounds, and the existing Tool Registry/RBAC/policy controls.
+
+Enable the live planner with `APEX_PLANNER=openai` and `OPENAI_API_KEY`. The model name is configurable through `OPENAI_MODEL`.
 ## Two-minute demo
 
 The fastest demo path is:

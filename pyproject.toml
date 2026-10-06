@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apexoperator"
-version = "0.2.0"
+version = "0.3.0"
 description = "Production-oriented autonomous business operations engine"
 requires-python = ">=3.11"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
     "pymupdf>=1.24,<2",
     "sqlalchemy>=2.0,<3",
     "psycopg[binary]>=3.2,<4",
+    "openai>=3.20,<3.21",
 ]
 
 [project.optional-dependencies]

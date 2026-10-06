@@ -10,7 +10,8 @@ from apexoperator.evaluation.models import EvalScenario, ScenarioSeverity
 from apexoperator.evaluation.security import run_security_evaluation
 from apexoperator.policy.engine import DeterministicPolicyEngine, PolicyDecision
 from apexoperator.security.rbac import Permission, RBAC, Role
-from apexoperator.tools.registry import ToolContext, ToolRegistry
+from apexoperator.tools.finance import InvoiceIdInput
+from apexoperator.tools.registry import RegisteredTool, ToolContext, ToolRegistry
 
 
 def test_rbac_matrix():
@@ -49,16 +50,31 @@ def test_audit_duplicate_and_tamper_protection():
 def test_runtime_retry_limit_is_bounded():
     class EndlessPlanner:
         def plan(self, request, state):
-            return PlannedToolCall(tool_name="missing_tool", input_data={})
+            return PlannedToolCall(
+                tool_name="read_invoice",
+                input_data={"invoice_id": request.invoice_id},
+            )
 
-    runtime = AgentRuntime(ToolRegistry(), EndlessPlanner())
+    registry = ToolRegistry()
+    registry.register(
+        RegisteredTool(
+            name="read_invoice",
+            input_model=InvoiceIdInput,
+            permission=Permission.INVOICE_READ,
+            handler=lambda _model, _context: (_ for _ in ()).throw(
+                ValueError("simulated tool failure")
+            ),
+        )
+    )
+
+    runtime = AgentRuntime(registry, EndlessPlanner())
     context = ToolContext(
         actor_id="eval",
         role=Role.AP_CLERK,
         audit_ledger=CryptographicAuditLedger(),
     )
     state = runtime.run(
-        AgentTaskRequest(task_id="TASK", intent="anything", invoice_id="INV"),
+        AgentTaskRequest(task_id="TASK", intent="process_invoice", invoice_id="INV"),
         context,
     )
     assert state.steps == 3

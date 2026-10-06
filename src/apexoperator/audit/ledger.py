@@ -48,10 +48,18 @@ class CryptographicAuditLedger:
         self,
         event_id: str,
         event_type: str,
-        payload: dict[str, Any],
+        action_or_payload: str | dict[str, Any],
+        payload: dict[str, Any] | None = None,
     ) -> str:
         event_id = event_id.strip()
         event_type = event_type.strip()
+        if payload is None and isinstance(action_or_payload, dict):
+            action = "event"
+            payload = action_or_payload
+        elif payload is not None and isinstance(action_or_payload, str):
+            action = action_or_payload.strip()
+        else:
+            raise ValueError("audit action/payload arguments are invalid")
         if not event_id:
             raise ValueError("event_id cannot be empty")
         if not event_type:
@@ -65,6 +73,7 @@ class CryptographicAuditLedger:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_id": event_id,
             "event_type": event_type,
+            "action": action,
             "payload": self._normalize(payload),
             "previous_hash": previous_hash,
         }

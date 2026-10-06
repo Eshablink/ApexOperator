@@ -42,3 +42,4 @@ The OCR layer is an interface boundary; an actual provider must be supplied by d
 Secrets, TLS termination, enterprise identity, rate limiting, and operational infrastructure still belong to the deployment layer.
 
 Those limitations are documented rather than hidden.
+\n## Planner safety boundary\n\nLLM planner output is treated as untrusted. The Agent Runtime validates the proposed next action against the current workflow state and invoice identity before the Tool Registry can execute it. An invalid or disallowed plan is audited and stopped.\n
