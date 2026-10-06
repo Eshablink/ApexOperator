@@ -125,7 +125,7 @@ class AlwaysFailPlanner:
     def plan(self, request, state):
         return PlannedToolCall(
             tool_name="read_invoice",
-            input_data={"invoice_id": "DOES-NOT-EXIST"},
+            input_data={"invoice_id": request.invoice_id},
         )
 
 
@@ -135,8 +135,8 @@ def test_runtime_stops_after_retry_limit(tmp_path):
     state = AgentRuntime(registry, planner=AlwaysFailPlanner()).run(
         AgentTaskRequest(
             task_id="TASK-002",
-            intent="anything",
-            invoice_id="INV-001",
+            intent="process_invoice",
+            invoice_id="MISSING-INVOICE",
         ),
         context,
     )
