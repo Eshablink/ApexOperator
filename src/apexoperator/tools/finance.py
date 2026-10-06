@@ -86,3 +86,47 @@ class FinanceToolset:
             "status": "PENDING_HUMAN_APPROVAL",
             "justification": input_data.justification,
         }
+
+ 
+class VerifyAuditInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+def build_finance_tools(finance: FinanceToolset):
+    from apexoperator.security.rbac import Permission
+    from apexoperator.tools.registry import RegisteredTool
+
+    return (
+        RegisteredTool(
+            name="read_invoice",
+            input_model=InvoiceIdInput,
+            permission=Permission.INVOICE_READ,
+            handler=lambda model, _context: finance.read_invoice(model),
+        ),
+        RegisteredTool(
+            name="validate_invoice",
+            input_model=InvoiceIdInput,
+            permission=Permission.INVOICE_VALIDATE,
+            handler=lambda model, _context: finance.validate_invoice(model),
+        ),
+        RegisteredTool(
+            name="recalculate_invoice",
+            input_model=RecalculateInvoiceInput,
+            permission=Permission.INVOICE_RECALCULATE,
+            handler=lambda model, _context: finance.recalculate_invoice(model),
+        ),
+        RegisteredTool(
+            name="submit_approval",
+            input_model=SubmitApprovalInput,
+            permission=Permission.APPROVAL_SUBMIT,
+            handler=lambda model, _context: finance.submit_approval(model),
+        ),
+        RegisteredTool(
+            name="verify_audit",
+            input_model=VerifyAuditInput,
+            permission=Permission.AUDIT_VERIFY,
+            handler=lambda model, context: {
+                "integrity_valid": context.audit_ledger.verify_integrity()
+            },
+        ),
+    )
