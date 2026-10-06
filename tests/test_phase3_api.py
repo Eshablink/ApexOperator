@@ -195,6 +195,7 @@ def test_ready_and_secured_dashboard(tmp_path):
 
     assert denied.status_code == 403
     assert allowed.status_code == 200
-    assert "ApexOperator Operations Dashboard" in allowed.text
+    assert "Operations Control Room" in allowed.text
+    assert "Pending approval" in allowed.text
 
 
