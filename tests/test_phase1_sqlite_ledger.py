@@ -119,18 +119,17 @@ def test_sequence_reordering_is_detected(tmp_path):
 
 def test_insertion_is_detected(tmp_path):
     ledger, _, second = seed_ledger(tmp_path)
-    with pytest.raises(Exception):
-        ledger.connection.execute(
-            """
-            INSERT INTO audit_events (
-                sequence_id, event_id, timestamp, event_type,
-                action, after_state, previous_hash, event_hash
-            ) VALUES (2, 'EVT-999', '2026-01-01T00:00:00+00:00',
-                      'INJECTED', 'inject', '{}', ?, ?)
-            """,
-            (second, "0" * 64),
-        )
-    assert ledger.verify_integrity() is True
+    ledger.connection.execute(
+        """
+        INSERT INTO audit_events (
+            sequence_id, event_id, timestamp, event_type,
+            action, after_state, previous_hash, event_hash
+        ) VALUES (2, 'EVT-999', '2026-01-01T00:00:00+00:00',
+                  'INJECTED', 'inject', '{}', ?, ?)
+        """,
+        (second, "0" * 64),
+    )
+    assert ledger.verify_integrity() is False
     ledger.close()
 
 
