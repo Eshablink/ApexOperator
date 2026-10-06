@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from apexoperator.observability.logging import configure_logging, log_request
 
@@ -53,6 +54,19 @@ def create_app(
     api.state.authenticator = authenticator
     api.state.service = service
     api.state.engine = engine
+
+    frontend_dir = Path(__file__).resolve().parents[3] / "frontend"
+    frontend_assets = frontend_dir / "assets"
+    if (frontend_dir / "index.html").is_file() and frontend_assets.is_dir():
+        api.mount(
+            "/assets",
+            StaticFiles(directory=str(frontend_assets)),
+            name="frontend-assets",
+        )
+
+        @api.get("/", include_in_schema=False)
+        def frontend_home() -> FileResponse:
+            return FileResponse(frontend_dir / "index.html")
 
     @api.middleware("http")
     async def request_logging(request: Request, call_next):
@@ -109,6 +123,24 @@ def create_app(
     @api.get("/audit/verify", response_model=AuditVerificationResponse)
     def verify_audit(request: Request) -> dict[str, bool]:
         return request.app.state.service.verify_audit(principal(request))
+
+    @api.get("/dashboard/data")
+    def dashboard_data(request: Request) -> dict:
+        reviewer = principal(request)
+        if not RBAC.is_allowed(reviewer.role, Permission.AUDIT_READ):
+            raise HTTPException(status_code=403, detail="permission denied")
+
+        tasks = request.app.state.service.task_store.list_recent(50)
+        counts: dict[str, int] = {}
+        for task in tasks:
+            status = str(task["status"])
+            counts[status] = counts.get(status, 0) + 1
+
+        return {
+            "audit_ok": request.app.state.service.audit_ledger.verify_integrity(),
+            "counts": counts,
+            "tasks": tasks,
+        }
 
     @api.get("/dashboard", response_class=HTMLResponse)
     def dashboard(request: Request) -> HTMLResponse:

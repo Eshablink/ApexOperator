@@ -122,6 +122,19 @@ The fastest demo path is:
 
 See **[docs/DEMO.md](docs/DEMO.md)** for the exact commands.
 
+## Frontend experience
+
+ApexOperator includes a recruiter-facing product surface as well as the backend control plane.
+
+The frontend is intentionally designed around the same engineering story as the backend:
+- a polished product landing experience;
+- a live operations control room backed by the FastAPI task and audit APIs;
+- visible trust-boundary messaging rather than generic AI magic;
+- responsive layouts for desktop and mobile;
+- clear workflow states, risk cues, audit health, loading states, and action feedback;
+- local demo authentication with no claim of production identity infrastructure.
+
+Start the API and open `http://127.0.0.1:8000/` to see the product surface. The landing page can launch the live control room and connect to the development tokens.
 ## Local development
 
 Python 3.11+ is required.
@@ -138,6 +151,9 @@ Start the API:
 ```bash
 uvicorn apexoperator.api.main:create_app --factory --reload
 ```
+
+Open **http://127.0.0.1:8000/** for the product landing page and live control room.
+
 
 The development authentication mapping is intentionally local-only. It is not presented as production identity infrastructure.
 
