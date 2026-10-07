@@ -183,8 +183,35 @@ class AgentRuntime:
                     return state
 
                 if pending_call is None:
+                    self._audit_failure(
+                        context,
+                        event_id=f"planner-proposal:{request.task_id}:{state.steps}",
+                        event_type="PLANNER_PROPOSAL",
+                        action="planner_proposal",
+                        payload={
+                            "task_id": request.task_id,
+                            "planner_mode": getattr(self.planner, "mode", type(self.planner).__name__.replace("Planner", "").lower()),
+                            "model": getattr(self.planner, "model", None),
+                            "proposed_tool": None,
+                            "input_data": {},
+                        },
+                    )
                     state.status = "COMPLETED"
                     return state
+
+                self._audit_failure(
+                    context,
+                    event_id=f"planner-proposal:{request.task_id}:{state.steps}",
+                    event_type="PLANNER_PROPOSAL",
+                    action="planner_proposal",
+                    payload={
+                        "task_id": request.task_id,
+                        "planner_mode": getattr(self.planner, "mode", type(self.planner).__name__.replace("Planner", "").lower()),
+                        "model": getattr(self.planner, "model", None),
+                        "proposed_tool": pending_call.tool_name,
+                        "input_data": pending_call.input_data,
+                    },
+                )
 
                 if not self._plan_is_allowed(request, state, pending_call):
                     return self._invalid_plan(
