@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -15,6 +16,7 @@ class CreateTaskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     invoice_id: str
     justification: str | None = None
+    planner_mode: Literal["mock", "openai"] | None = None
 
     @field_validator("invoice_id")
     @classmethod
@@ -27,7 +29,17 @@ class CreateTaskRequest(BaseModel):
 
 class ApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    comment: str | None = None
+    comment: str | None = Field(default=None, min_length=3, max_length=500)
+
+    @field_validator("comment")
+    @classmethod
+    def validate_comment(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("review reason cannot be empty")
+        return value
 
 
 class LoginRequest(BaseModel):
@@ -59,6 +71,12 @@ class TaskResponse(BaseModel):
     justification: str | None = None
     reviewer: str | None = None
     review_comment: str | None = None
+
+
+class TaskDetailResponse(TaskResponse):
+    audit_timeline: list[dict] = Field(default_factory=list)
+    planner_proposals: list[dict] = Field(default_factory=list)
+    policy_decision: str | None = None
 
 
 class AuditVerificationResponse(BaseModel):
