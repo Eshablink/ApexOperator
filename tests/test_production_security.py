@@ -42,6 +42,7 @@ def make_token(secret: str, *, role=Role.FINANCE_MANAGER, expires_in=300, **clai
     payload = {
         "sub": "manager-1",
         "roles": [role.value],
+        "sid": "test-session",
         "exp": int(time.time()) + expires_in,
         **claims,
     }
@@ -72,6 +73,7 @@ def test_jwt_authenticator_requires_single_supported_role():
         {
             "sub": "manager-1",
             "roles": [Role.FINANCE_MANAGER.value, Role.SYSTEM_ADMIN.value],
+            "sid": "test-session",
             "exp": int(time.time()) + 300,
         },
         secret,
