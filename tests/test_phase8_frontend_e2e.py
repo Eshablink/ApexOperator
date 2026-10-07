@@ -89,13 +89,16 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             page.get_by_role("button", name="Open live control room").first.click()
             expect(page.get_by_text("Open the control room.")).to_be_visible()
 
-            page.get_by_role("button", name="Finance Manager").click()
+            page.get_by_role("button", name="Sign in as Finance Manager").click()
             expect(page.locator("#apiPill")).to_contain_text("API READY")
 
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
             expect(page.locator(".mini-tag.pending").first).to_contain_text("PENDING HUMAN APPROVAL")
 
             page.get_by_role("button", name="Approve").first.click()
+            expect(page.get_by_role("dialog", name="Approve operation")).to_be_visible()
+            page.locator("#reviewReason").fill("Verified against invoice and threshold policy.")
+            page.get_by_role("button", name="Approve with reason").click()
             expect(page.locator(".toast.success", has_text="APPROVED")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("APPROVED")
 
