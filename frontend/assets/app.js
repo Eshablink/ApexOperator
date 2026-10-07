@@ -524,10 +524,10 @@ async function processInvoice() {
     $("#justificationInput").value = "";
     await loadLive();
   } catch (error) {
-    if (error.status === 503 && state.plannerMode === "openai") {
-      state.plannerMode = "auto";
+    if ((error.status === 503 || error.status === 502) && state.plannerMode === "openai") {
+      state.plannerMode = "mock";
       updatePlanner(state.planner);
-      toast("Live LLM is unavailable; switched this run to Auto fallback.", "error");
+      toast("Live LLM failed for this run; switched to the deterministic fallback.", "error");
     } else {
       toast(error.message, "error");
     }
