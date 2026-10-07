@@ -14,6 +14,7 @@
     reviewAction: null,
     lastFocus: null,
     serverReady: false,
+    paletteFocus: null,
   };
 
   const TOKEN_KEY = "apexoperator_demo_token";
@@ -670,6 +671,40 @@
   }
 
   function installInteractions() {
+    document.addEventListener("keydown", (event) => {
+      const paletteOpen = $("#commandPalette")?.classList.contains("open");
+      const shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (shortcut) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (paletteOpen) {
+          window.closeCommandPalette?.();
+          if (state.paletteFocus instanceof HTMLElement) state.paletteFocus.focus();
+          state.paletteFocus = null;
+        } else {
+          state.paletteFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          window.openCommandPalette?.();
+        }
+        return;
+      }
+      if (event.key === "Escape" && paletteOpen) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.closeCommandPalette?.();
+        if (state.paletteFocus instanceof HTMLElement) state.paletteFocus.focus();
+        state.paletteFocus = null;
+      }
+    }, true);
+
+    $("#commandPalette")?.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("[data-command]")) {
+        window.setTimeout(() => {
+          if (state.paletteFocus instanceof HTMLElement) state.paletteFocus.focus();
+          state.paletteFocus = null;
+        }, 0);
+      }
+    });
+
     $("#processBtn")?.addEventListener("click", processInvoiceEnhanced, true);
     $("#verifyBtn")?.addEventListener("click", verifyAuditEnhanced, true);
     $("#closeDetail")?.addEventListener("click", closeDetail);
