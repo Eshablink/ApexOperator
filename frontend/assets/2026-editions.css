@@ -949,3 +949,24 @@ body::after{display:none}
 .ed-footer>div{display:grid;gap:7px}.ed-footer strong{font-size:20px;letter-spacing:-.04em}.ed-footer span{font-size:10px;color:rgba(18,17,26,.48)}
 .ed-footer nav{display:flex;gap:18px;align-items:flex-start}.ed-footer nav a{font-size:9px;font-weight:850;letter-spacing:.08em;color:rgba(18,17,26,.58)}.ed-footer nav a:hover{color:var(--ed-purple)}
 .ghost-btn:disabled{opacity:.4;cursor:not-allowed}
+
+@media (max-width:820px){
+  .audit-actions{grid-template-columns:1fr 1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .mobile-console-nav{display:grid;grid-template-columns:repeat(3,1fr);position:sticky;bottom:0;z-index:12;padding:7px;border-top:1px solid rgba(255,255,255,.07);background:rgba(11,17,30,.94);backdrop-filter:blur(16px)}
+  .mobile-console-nav button{border:0;background:transparent;color:#6d7a8f;padding:8px 5px;font-size:8px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+  .mobile-console-nav button:hover,.mobile-console-nav button:focus-visible{color:#fff}
+  .ed-footer{display:block;padding-top:38px}.ed-footer nav{margin-top:20px;flex-wrap:wrap}
+}
+@media (max-width:640px){
+  .toolbar-tools{display:grid;grid-template-columns:1fr auto;align-items:center}.toolbar-tools input{width:100%;grid-column:1/-1}.toolbar-tools select{min-width:0;padding:8px 6px;font-size:8px}
+  .operation-table{min-width:0}.operation-table thead{display:none}.operation-table,.operation-table tbody,.operation-table tr,.operation-table td{display:block;width:100%}
+  .operation-table tr{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .operation-table td{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:6px 0;border:0;font-size:9px}.operation-table td::before{content:attr(data-label);color:#4f5b6e;font-size:7px;letter-spacing:.1em;text-transform:uppercase;font-weight:900}
+  .operation-table td:first-child{grid-template-columns:1fr}.operation-table td:first-child::before{display:none}.operation-main{padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.025)}
+  .table-actions{justify-content:flex-start}.task-pagination{padding:10px 12px}
+  .sample-label{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}.boot-overlay,.review-modal,.detail-modal{transition:none}.operation-clickable{transition:none}
+}
