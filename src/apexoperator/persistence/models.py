@@ -46,3 +46,33 @@ class AuditLedgerMeta(Base):
     singleton: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     head_sequence_id: Mapped[int] = mapped_column(Integer, nullable=False)
     head_event_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class UserRecord(Base):
+    __tablename__ = "users"
+
+    actor_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
+    role: Mapped[str] = mapped_column(String(64), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[str] = mapped_column(
+        String(64),
+        default=lambda: datetime.now(timezone.utc).isoformat(),
+        nullable=False,
+    )
+
+
+class AuthSessionRecord(Base):
+    __tablename__ = "auth_sessions"
+
+    session_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    csrf_token: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    revoked_at: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[str] = mapped_column(
+        String(64),
+        default=lambda: datetime.now(timezone.utc).isoformat(),
+        nullable=False,
+    )

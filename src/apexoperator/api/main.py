@@ -1,7 +1,9 @@
+import hmac
 import os
 from pathlib import Path
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -12,6 +14,7 @@ from apexoperator.observability.logging import configure_logging, log_request
 
 from apexoperator.api.schemas import (
     ApprovalRequest,
+    LoginRequest,
     AuditVerificationResponse,
     CreateTaskRequest,
     TaskResponse,
@@ -19,7 +22,7 @@ from apexoperator.api.schemas import (
 from apexoperator.persistence.database import init_database, make_engine, make_session_factory
 from apexoperator.persistence.sqlalchemy_audit import SQLAlchemyAuditLedger
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
-from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal
+from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal, ensure_bootstrap_user
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.service.approvals import ApprovalService
 
@@ -34,12 +37,21 @@ def create_app(
 ) -> FastAPI:
     if authenticator is None:
         if settings.app_env == "production":
-            if not settings.jwt_secret:
-                raise RuntimeError("production authentication requires JWT_SECRET")
+            if not settings.jwt_secret or not settings.bootstrap_email or not settings.bootstrap_password_hash:
+                raise RuntimeError("production authentication is not configured")
+            ensure_bootstrap_user(
+                sessions,
+                email=settings.bootstrap_email,
+                password_hash=settings.bootstrap_password_hash,
+                role=Role(settings.bootstrap_role),
+            )
             authenticator = JWTAuthenticator(
+                session_factory=sessions,
                 secret=settings.jwt_secret,
                 issuer=settings.jwt_issuer,
                 audience=settings.jwt_audience,
+                session_minutes=settings.session_minutes,
+                cookie_secure=True,
             )
         else:
             authenticator = InMemoryAuthenticator(
@@ -128,14 +140,65 @@ def create_app(
         )
         return response
 
-    def principal(request: Request) -> Principal:
+    def _session_token(request: Request) -> str | None:
+        cookie_token = request.cookies.get(JWTAuthenticator.SESSION_COOKIE)
+        if cookie_token:
+            return cookie_token
         authorization = request.headers.get("Authorization")
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="authorization required")
-        token = authorization.removeprefix("Bearer ").strip()
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.removeprefix("Bearer ").strip()
+            if token:
+                return token
+        return None
+
+    def _require_csrf(request: Request) -> None:
+        if settings.app_env != "production" or request.method in {"GET", "HEAD", "OPTIONS"}:
+            return
+        expected = request.cookies.get(JWTAuthenticator.CSRF_COOKIE)
+        supplied = request.headers.get("X-CSRF-Token")
+        if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+            raise HTTPException(status_code=403, detail="csrf validation failed")
+
+    def principal(request: Request) -> Principal:
+        token = _session_token(request)
         if not token:
-            raise HTTPException(status_code=401, detail="authorization required")
+            raise HTTPException(status_code=401, detail="authentication required", headers={"WWW-Authenticate": "Bearer"})
+        _require_csrf(request)
         return request.app.state.authenticator.authenticate(token)
+
+    @api.get("/auth/config")
+    def auth_config() -> dict[str, Any]:
+        return {
+            "mode": settings.app_env,
+            "production": settings.app_env == "production",
+            "roles": [role.value for role in Role],
+            "session_minutes": settings.session_minutes if settings.app_env == "production" else None,
+        }
+
+    @api.get("/auth/me")
+    def auth_me(request: Request) -> dict[str, str]:
+        current = principal(request)
+        return {"actor_id": current.actor_id, "role": current.role.value}
+
+    @api.post("/auth/login")
+    def auth_login(body: LoginRequest, request: Request, response: Response) -> dict[str, str]:
+        if settings.app_env != "production":
+            raise HTTPException(status_code=404, detail="production authentication is disabled")
+        token, current, csrf_token, max_age = request.app.state.authenticator.login(body.email, body.password)
+        response.set_cookie(key=JWTAuthenticator.SESSION_COOKIE, value=token, max_age=max_age, httponly=True, secure=True, samesite="lax", path="/")
+        response.set_cookie(key=JWTAuthenticator.CSRF_COOKIE, value=csrf_token, max_age=max_age, httponly=False, secure=True, samesite="lax", path="/")
+        return {"actor_id": current.actor_id, "role": current.role.value}
+
+    @api.post("/auth/logout")
+    def auth_logout(request: Request, response: Response) -> dict[str, str]:
+        if settings.app_env == "production":
+            _require_csrf(request)
+        token = _session_token(request)
+        if token and settings.app_env == "production":
+            request.app.state.authenticator.logout(token)
+        response.delete_cookie(JWTAuthenticator.SESSION_COOKIE, path="/")
+        response.delete_cookie(JWTAuthenticator.CSRF_COOKIE, path="/")
+        return {"status": "signed_out"}
 
     @api.api_route("/health", methods=["GET", "HEAD"])
     def health() -> dict[str, str]:

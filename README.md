@@ -166,7 +166,11 @@ uvicorn apexoperator.api.main:create_app --factory --reload
 Open **http://127.0.0.1:8000/** for the product landing page and live control room.
 
 
-The development authentication mapping is intentionally local-only. It is not presented as production identity infrastructure.
+The development authentication mapping is intentionally local-only. In production, the application uses a database-backed user/session layer with HttpOnly JWT cookies, revocation, CSRF protection, and server-side RBAC.
+
+## Product UI
+
+The frontend is designed as a recruiter-facing control product rather than a generic admin template. The 2026 polish pass adds a secure auth surface, responsive control-room shell, live session state, keyboard-first command palette, focus-visible states, reduced-motion support, clear risk/status cues, and explicit security posture messaging.
 
 ## Evidence
 

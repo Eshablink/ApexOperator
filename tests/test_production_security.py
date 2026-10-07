@@ -32,6 +32,8 @@ def test_production_settings_accept_strong_jwt_secret():
         app_env="production",
         database_url="postgresql+psycopg://user:pass@db/app",
         jwt_secret="x" * 48,
+        bootstrap_email="owner@example.com",
+        bootstrap_password_hash="scrypt$v1$16384$8$1$c2FsdA==$ZGlnZXN0",
     )
     assert settings.app_env == "production"
 
@@ -40,6 +42,7 @@ def make_token(secret: str, *, role=Role.FINANCE_MANAGER, expires_in=300, **clai
     payload = {
         "sub": "manager-1",
         "roles": [role.value],
+        "sid": "test-session",
         "exp": int(time.time()) + expires_in,
         **claims,
     }
@@ -70,6 +73,7 @@ def test_jwt_authenticator_requires_single_supported_role():
         {
             "sub": "manager-1",
             "roles": [Role.FINANCE_MANAGER.value, Role.SYSTEM_ADMIN.value],
+            "sid": "test-session",
             "exp": int(time.time()) + 300,
         },
         secret,

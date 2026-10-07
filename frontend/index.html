@@ -13,6 +13,7 @@
   <div class="ambient ambient-a"></div>
   <div class="ambient ambient-b"></div>
 
+  <a class="skip-link" href="#top">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="#top" aria-label="ApexOperator home">
       <span class="brand-mark"><span></span><span></span><span></span></span>
@@ -22,7 +23,7 @@
       <a href="#system">System</a>
       <a href="#controls">Controls</a>
       <a href="#console">Console</a>
-      <button class="nav-cta" id="launchTop">Launch console <span>↗</span></button>
+      <div class="header-actions"><span class="session-badge" id="sessionBadge"><b></b> DEMO MODE</span><button class="nav-cta" id="launchTop">Launch console <span>↗</span></button></div>
     </nav>
   </header>
 
@@ -173,7 +174,7 @@
       <div class="console-frame">
         <div class="console-top">
           <div class="console-brand"><span class="brand-mark tiny"><i></i><i></i><i></i></span> ApexOperator <span>/</span> Control Room</div>
-          <div class="console-health"><b></b> API READY <span>•</span> AUDIT VALID</div>
+          <div class="console-health"><b></b> API READY <span>•</span> AUDIT VALID <span>•</span> SECURE RUNTIME</div>
         </div>
         <div class="kpi-grid">
           <div class="kpi"><span>Pending approval</span><strong>03</strong><i>needs attention</i></div>
@@ -260,18 +261,56 @@
   </div>
 
   <div class="auth-modal" id="authModal" aria-hidden="true">
-    <div class="auth-card">
-      <button class="close-btn modal-close" id="closeAuth">×</button>
-      <div class="auth-logo"><span class="brand-mark"><span></span><span></span><span></span></span></div>
-      <div class="eyebrow">LOCAL DEMO ACCESS</div>
-      <h2>Open the control room.</h2>
-      <p>This reference build uses development tokens so the full governed workflow can be demonstrated locally.</p>
-      <div class="role-grid">
-        <button class="role-card" data-token="dev-manager-token"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
-        <button class="role-card" data-token="dev-clerk-token"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
-        <button class="role-card" data-token="dev-admin-token"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="close-btn modal-close" id="closeAuth" aria-label="Close sign in">×</button>
+      <div class="auth-topline">
+        <div class="auth-logo"><span class="brand-mark"><span></span><span></span><span></span></span></div>
+        <span class="security-chip"><b></b> Protected workspace</span>
       </div>
-      <div class="auth-foot"><span>AUTH IS DEV-ONLY</span><span>No external identity provider configured</span></div>
+      <div class="eyebrow" id="authKicker">RECRUITER DEMO ACCESS</div>
+      <h2 id="authTitle">Open the control room.</h2>
+      <p id="authLede">Use a deterministic demo role to explore the governed workflow without external credentials.</p>
+
+      <div id="productionAuth" class="hidden">
+        <form id="loginForm" class="login-form">
+          <label>Email
+            <input id="loginEmail" name="email" type="email" autocomplete="username" placeholder="you@company.com" required>
+          </label>
+          <label>Password
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="12+ characters" minlength="12" required>
+          </label>
+          <button class="primary-btn full" id="loginBtn" type="submit">Sign in securely <span>→</span></button>
+        </form>
+        <div class="auth-security-grid">
+          <span><b>✓</b> HttpOnly session cookie</span>
+          <span><b>✓</b> Revocable database session</span>
+          <span><b>✓</b> CSRF protected actions</span>
+          <span><b>✓</b> Server-side role enforcement</span>
+        </div>
+      </div>
+
+      <div id="demoAuth">
+        <div class="role-grid">
+          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
+          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
+          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+        </div>
+      </div>
+
+      <div class="auth-foot" id="authFoot"><span>DEMO ONLY</span><span>No real money movement</span></div>
+    </div>
+  </div>
+
+  <div class="command-palette" id="commandPalette" aria-hidden="true">
+    <div class="command-card" role="dialog" aria-modal="true" aria-labelledby="commandTitle">
+      <div class="command-head"><div><span class="eyebrow">COMMAND CENTER</span><h2 id="commandTitle">Jump to a control</h2></div><kbd>Esc</kbd></div>
+      <input id="commandSearch" type="search" placeholder="Search actions…" aria-label="Search actions">
+      <div class="command-list">
+        <button data-command="console"><span class="command-icon">⌘</span><strong>Open control room</strong><small>View live operations</small><kbd>↵</kbd></button>
+        <button data-command="invoice"><span class="command-icon">₹</span><strong>Process invoice</strong><small>Run a governed workflow</small><kbd>→</kbd></button>
+        <button data-command="audit"><span class="command-icon">✓</span><strong>Verify audit chain</strong><small>Check cryptographic integrity</small><kbd>✓</kbd></button>
+      </div>
+      <div class="command-foot"><span>Keyboard first</span><span>Ctrl / Cmd + K</span></div>
     </div>
   </div>
 
