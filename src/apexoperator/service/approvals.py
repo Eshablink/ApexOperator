@@ -118,6 +118,8 @@ class ApprovalService:
             principal.actor_id,
             decision,
             request.justification,
+            planner_mode=planner_mode,
+            planner_model=getattr(runtime.planner, "model", None),
         )
         row = self.task_store.get(task_id)
         return TaskResponse.model_validate(row)
@@ -133,17 +135,27 @@ class ApprovalService:
         if row is None:
             raise HTTPException(status_code=404, detail="task not found")
         timeline = self.audit_ledger.list_for_task(task_id)
-        proposals = [
-            {
-                "timestamp": event["timestamp"],
-                "planner_mode": event["after_state"].get("planner_mode"),
-                "model": event["after_state"].get("model"),
-                "proposed_tool": event["after_state"].get("proposed_tool"),
-                "input_data": event["after_state"].get("input_data", {}),
-            }
-            for event in timeline
-            if event["event_type"] == "PLANNER_PROPOSAL"
-        ]
+        proposals = []
+        for event in timeline:
+            if event["event_type"] not in {"TOOL_EXECUTED", "TOOL_FAILED"}:
+                continue
+            payload = event["after_state"] if isinstance(event["after_state"], dict) else {}
+            tool_name = payload.get("tool")
+            if not tool_name:
+                continue
+            input_data: dict[str, Any] = {"invoice_id": row["invoice_id"]}
+            if tool_name == "submit_approval":
+                input_data["justification"] = row["justification"] or "Policy escalation"
+            proposals.append(
+                {
+                    "timestamp": event["timestamp"],
+                    "planner_mode": row.get("planner_mode") or self.default_planner_mode,
+                    "model": row.get("planner_model"),
+                    "proposed_tool": tool_name,
+                    "input_data": input_data,
+                    "outcome": event["event_type"],
+                }
+            )
         return {
             **row,
             "audit_timeline": timeline,
@@ -162,9 +174,6 @@ class ApprovalService:
         permission = Permission.APPROVAL_APPROVE if approve else Permission.APPROVAL_REJECT
         if not RBAC.is_allowed(principal.role, permission):
             raise HTTPException(status_code=403, detail="permission denied")
-
-        if request.comment is None or len(request.comment.strip()) < 3:
-            raise HTTPException(status_code=422, detail="review reason is required")
 
         row = self.task_store.get(task_id)
         if row is None:
