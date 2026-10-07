@@ -169,14 +169,18 @@ The project includes a recruiter-facing product experience rather than only an A
 
 ### Operations control room
 
-- live task KPIs;
-- filterable persisted operations;
-- approve/reject actions;
-- audit-integrity indicator;
-- planner/runtime status;
+- live task KPIs with cold-start/wake-up messaging;
+- search, status filters and server-side pagination;
+- one-click development demo role access;
+- task detail view with AI planner proposals, policy decision and audit timeline;
+- approve/reject with a mandatory reviewer reason and conditional state transition;
+- tamper simulation followed by cryptographic audit verification;
+- CSV/JSON audit export and demo-data reset controls;
+- planner mode selection with deterministic mock fallback and optional OpenAI planner;
+- audit-integrity indicator and planner/runtime status;
 - quick invoice processing;
-- explicit loading, error and success states;
-- responsive mobile layout.
+- explicit loading, empty, error and retry states;
+- responsive mobile operations cards and bottom navigation.
 
 ### 2026 UX layer
 
