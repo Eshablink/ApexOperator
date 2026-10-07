@@ -455,9 +455,6 @@ code {{ font-size:12px; }}
 </html>"""
         return HTMLResponse(html)
 
-    return api
-
-
     @api.post("/audit/tamper-demo")
     def audit_tamper_demo(request: Request) -> dict[str, Any]:
         current = principal(request)
@@ -505,3 +502,7 @@ code {{ font-size:12px; }}
             raise HTTPException(status_code=403, detail="demo reset is disabled")
         request.app.state.service.reset_demo()
         return {"status": "reset", "audit_ok": True}
+
+    return api
+
+
