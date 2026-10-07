@@ -137,7 +137,7 @@ def test_tamper_demo_breaks_integrity_and_export_works(tmp_path):
     exported = client.get("/audit/export?format=json", headers=auth("admin-token"))
     assert exported.status_code == 200
     assert exported.headers["Content-Disposition"].endswith("apexoperator-audit.json")
-    assert "PLANNER_PROPOSAL" in exported.text
+    assert "TOOL_EXECUTED" in exported.text
 
 
 def test_demo_reset_clears_tasks_and_restores_audit_integrity(tmp_path):
