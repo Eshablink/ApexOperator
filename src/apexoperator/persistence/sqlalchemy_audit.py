@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -157,3 +157,84 @@ class SQLAlchemyAuditLedger:
                 meta.head_sequence_id == expected_seq
                 and meta.head_event_hash == expected_hash
             )
+
+
+    def list_for_task(self, task_id: str) -> list[dict[str, Any]]:
+        task_id = task_id.strip()
+        if not task_id:
+            return []
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AuditEventRecord).order_by(AuditEventRecord.sequence_id.asc())
+            ).all()
+            events: list[dict[str, Any]] = []
+            for row in rows:
+                state = row.after_state if isinstance(row.after_state, dict) else {}
+                if state.get("task_id") != task_id:
+                    continue
+                events.append(
+                    {
+                        "sequence_id": row.sequence_id,
+                        "timestamp": row.timestamp,
+                        "event_id": row.event_id,
+                        "event_type": row.event_type,
+                        "action": row.action,
+                        "after_state": state,
+                        "previous_hash": row.previous_hash,
+                        "event_hash": row.event_hash,
+                    }
+                )
+            return events
+
+    def export_events(self) -> list[dict[str, Any]]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AuditEventRecord).order_by(AuditEventRecord.sequence_id.asc())
+            ).all()
+            return [
+                {
+                    "sequence_id": row.sequence_id,
+                    "timestamp": row.timestamp,
+                    "event_id": row.event_id,
+                    "event_type": row.event_type,
+                    "action": row.action,
+                    "after_state": row.after_state,
+                    "previous_hash": row.previous_hash,
+                    "event_hash": row.event_hash,
+                }
+                for row in rows
+            ]
+
+    def simulate_tampering(self, task_id: str | None = None) -> dict[str, Any]:
+        events = self.list_for_task(task_id) if task_id else self.export_events()
+        if not events:
+            raise ValueError("no audit events available for tamper demo")
+
+        target_id = events[0]["sequence_id"]
+        with self.session_factory.begin() as session:
+            row = session.get(AuditEventRecord, target_id)
+            if row is None:
+                raise ValueError("audit event disappeared before tamper demo")
+            state = dict(row.after_state) if isinstance(row.after_state, dict) else {"value": row.after_state}
+            state["tamper_demo"] = "UNAUTHORIZED_MUTATION"
+            row.after_state = state
+        return {
+            "tampered_sequence_id": target_id,
+            "integrity_valid": self.verify_integrity(),
+        }
+
+    def reset(self) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(delete(AuditEventRecord))
+            meta = session.get(AuditLedgerMeta, 1)
+            if meta is None:
+                session.add(
+                    AuditLedgerMeta(
+                        singleton=1,
+                        head_sequence_id=-1,
+                        head_event_hash=GENESIS_HASH,
+                    )
+                )
+            else:
+                meta.head_sequence_id = -1
+                meta.head_event_hash = GENESIS_HASH

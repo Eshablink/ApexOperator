@@ -4,8 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#2e145f">
-  <meta name="description" content="ApexOperator — governed AI for high-consequence business operations.">
-  <title>ApexOperator — AI Operations Control Room</title>
+  <meta name="description" content="ApexOperator — governed AI for high-consequence business operations. AI plans. Deterministic software governs authority.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://apexoperator.onrender.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ApexOperator — Governed AI Operations">
+  <meta property="og:description" content="AI reasons. Deterministic software governs authority, execution and evidence.">
+  <meta property="og:url" content="https://apexoperator.onrender.com/">
+  <meta property="og:image" content="https://apexoperator.onrender.com/assets/social-card.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ApexOperator — Governed AI Operations">
+  <meta name="twitter:description" content="AI reasons. Deterministic software governs authority, execution and evidence.">
+  <meta name="twitter:image" content="https://apexoperator.onrender.com/assets/social-card.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <title>ApexOperator — Governed AI Operations</title>
   <link rel="stylesheet" href="/assets/styles.css">
   <link rel="stylesheet" href="/assets/2026-polish.css">
   <link rel="stylesheet" href="/assets/2026-editions.css">
@@ -81,7 +93,7 @@
     </section>
 
     <section class="ed-marquee" aria-label="Workflow principles">
-      <div class="ed-marquee-track">
+      <div class="ed-marquee-track" aria-hidden="true">
         <span>UNDERSTAND</span><b>✦</b><span>PLAN</span><b>✦</b><span>POLICY</span><b>✦</b><span>HUMAN</span><b>✦</b><span>EXECUTE</span><b>✦</b><span>VERIFY</span><b>✦</b>
         <span>UNDERSTAND</span><b>✦</b><span>PLAN</span><b>✦</b><span>POLICY</span><b>✦</b><span>HUMAN</span><b>✦</b><span>EXECUTE</span><b>✦</b><span>VERIFY</span><b>✦</b>
       </div>
@@ -178,11 +190,11 @@
 
     <section class="ed-console-section section-shell console-preview" id="console">
       <div class="ed-console-head">
-        <div><p class="ed-kicker">OPERATIONS CONTROL ROOM</p><h2>Serious controls.<br><em>Zero dashboard boredom.</em></h2></div>
-        <button class="primary-btn small ed-primary" id="launchConsole">Launch live console <span>→</span></button>
+        <div><p class="ed-kicker">Operations Control Room</p><h2>Serious controls.<br><em>Zero dashboard boredom.</em></h2></div>
+        <button class="secondary-btn" id="launchConsole">View control room <span>→</span></button>
       </div>
       <div class="ed-console-frame">
-        <div class="ed-console-bar"><span>APEXOPERATOR / CONTROL ROOM</span><b><i></i> API READY</b><b><i></i> AUDIT VALID</b></div>
+        <div class="ed-console-bar"><span>APEXOPERATOR / CONTROL ROOM <small class="sample-label">SAMPLE DATA · PREVIEW</small></span><b><i></i> API READY</b><b><i></i> AUDIT VALID</b></div>
         <div class="ed-console-stats">
           <div><span>PENDING</span><strong>03</strong><small>needs attention</small></div>
           <div><span>AUTO</span><strong>18</strong><small>within policy</small></div>
@@ -198,6 +210,16 @@
       </div>
     </section>
   </main>
+
+  <div class="boot-overlay" id="bootOverlay" aria-hidden="false">
+    <div class="boot-card" role="status" aria-live="polite">
+      <div class="boot-kicker"><i></i> APEXOPERATOR</div>
+      <h2 id="bootTitle">Connecting to the control plane.</h2>
+      <p id="bootMessage">Checking server health and waking the application when needed.</p>
+      <div class="boot-progress"><i id="bootProgress"></i></div>
+      <button class="secondary-btn" id="bootRetry" hidden>Retry connection</button>
+    </div>
+  </div>
 
   <div class="console-overlay" id="consoleOverlay" aria-hidden="true">
     <div class="console-app">
@@ -235,14 +257,29 @@
             <section class="operations-panel">
               <div class="panel-toolbar">
                 <div><h3>Recent operations</h3><p id="recordHint">Loading persisted tasks…</p></div>
-                <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Filter invoice or task…" aria-label="Filter operations"><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
+                <div class="toolbar-tools">
+  <input id="taskFilter" type="search" placeholder="Search invoice or task…" aria-label="Search operations">
+  <select id="taskStatusFilter" aria-label="Filter by status">
+    <option value="">All status</option>
+    <option value="PENDING_HUMAN_APPROVAL">Pending</option>
+    <option value="AUTO_APPROVED">Auto approved</option>
+    <option value="APPROVED">Approved</option>
+    <option value="REJECTED">Rejected</option>
+  </select>
+  <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
+</div>
               </div>
               <div class="operation-table-wrap">
                 <table class="operation-table">
                   <thead><tr><th>Operation</th><th>Status</th><th>Requested by</th><th>Reviewer</th><th></th></tr></thead>
-                  <tbody id="operationsBody"><tr><td colspan="5" class="loading-row">Loading live operations…</td></tr></tbody>
+                  <tbody id="operationsBody">
+  <tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>
+  <tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>
+  <tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>
+</tbody>
                 </table>
               </div>
+              <div id="taskPagination" class="task-pagination" hidden></div>
             </section>
 
             <aside class="right-rail">
@@ -251,6 +288,11 @@
                 <h3>Process an invoice</h3>
                 <p>Run the governed workflow against the committed demo workspace.</p>
                 <label>Invoice ID<input id="invoiceInput" value="INV-LOW-001" autocomplete="off"></label>
+                <div class="planner-toggle" role="group" aria-label="Planner mode">
+                  <span>Planner</span>
+                  <button type="button" class="planner-choice active" data-planner="mock">Mock</button>
+                  <button type="button" class="planner-choice" data-planner="openai" id="livePlannerChoice">Live LLM</button>
+                </div>
                 <label>Justification<textarea id="justificationInput" placeholder="Why should this be processed?"></textarea></label>
                 <button class="primary-btn full" id="processBtn">Run governed workflow <span>→</span></button>
                 <small class="demo-note">Local demo data only · no real money movement</small>
@@ -259,10 +301,21 @@
                 <div class="integrity-head"><span class="shield">✓</span><div><span>AUDIT INTEGRITY</span><strong id="auditStatus">Checking…</strong></div></div>
                 <div class="integrity-bar"><i></i></div>
                 <p>SHA-256 chained events make unauthorized payload, ordering or deletion changes detectable.</p>
+                <div class="audit-actions">
+                  <button class="ghost-btn" id="exportJsonBtn">Export JSON</button>
+                  <button class="ghost-btn" id="exportCsvBtn">Export CSV</button>
+                  <button class="ghost-btn danger" id="tamperBtn" hidden>Simulate tampering</button>
+                  <button class="ghost-btn" id="resetDemoBtn" hidden>Reset demo data</button>
+                </div>
               </section>
             </aside>
           </div>
         </div>
+      </div>
+      <div class="mobile-console-nav" aria-label="Control room navigation">
+        <button data-mobile-section="overview">Overview</button>
+        <button data-mobile-section="operations">Operations</button>
+        <button data-mobile-section="audit">Audit</button>
       </div>
     </div>
   </div>
@@ -298,13 +351,56 @@
 
       <div id="demoAuth">
         <div class="role-grid">
-          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
-          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
-          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+          <button class="role-card" aria-label="Finance Manager" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Sign in as Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
+          <button class="role-card" aria-label="AP Clerk" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>Sign in as AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
+          <button class="role-card" aria-label="System Admin" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>Sign in as System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
         </div>
       </div>
 
       <div class="auth-foot" id="authFoot"><span>DEMO ONLY</span><span>No real money movement</span></div>
+    </div>
+  </div>
+
+  <div class="review-modal" id="reviewModal" aria-hidden="true">
+    <div class="review-card" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+      <button class="close-btn" id="closeReview" aria-label="Close review">×</button>
+      <p class="ed-kicker">HUMAN GATE</p>
+      <h2 id="reviewTitle">Review this operation.</h2>
+      <p id="reviewTaskLabel">A persisted decision requires your reason.</p>
+      <label>Reason
+        <textarea id="reviewReason" minlength="3" maxlength="500" placeholder="Explain why this should be approved or rejected." required></textarea>
+      </label>
+      <div class="review-actions">
+        <button class="secondary-btn" id="reviewCancel">Cancel</button>
+        <button class="primary-btn" id="reviewConfirm">Confirm decision</button>
+      </div>
+      <div class="review-status" id="reviewStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="detail-modal" id="detailModal" aria-hidden="true">
+    <div class="detail-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <button class="close-btn" id="closeDetail" aria-label="Close task detail">×</button>
+      <div class="detail-head">
+        <div><p class="ed-kicker">OPERATION DETAIL</p><h2 id="detailTitle">Operation</h2><span id="detailMeta"></span></div>
+        <span id="detailStatus" class="detail-status">—</span>
+      </div>
+      <div class="detail-grid">
+        <section class="detail-panel">
+          <div class="detail-panel-title">AI PROPOSALS · UNTRUSTED</div>
+          <div id="plannerProposalList" class="proposal-list"></div>
+        </section>
+        <section class="detail-panel">
+          <div class="detail-panel-title">APPLICATION POLICY · AUTHORITATIVE</div>
+          <div id="policyDecision" class="policy-decision">—</div>
+          <p id="policyDetail"></p>
+        </section>
+      </div>
+      <section class="detail-panel">
+        <div class="detail-panel-title">AUDIT TIMELINE</div>
+        <div id="auditTimeline" class="audit-timeline"></div>
+      </section>
+      <div class="detail-footer"><span id="detailReviewer"></span><div><button class="ghost-btn" id="detailExport">Export audit</button></div></div>
     </div>
   </div>
 
@@ -321,8 +417,18 @@
     </div>
   </div>
 
+  <footer class="ed-footer section-shell">
+    <div><strong>ApexOperator</strong><span>Reason with AI. Govern with code. Execute with evidence.</span></div>
+    <nav aria-label="Footer">
+      <a href="https://github.com/Eshablink/ApexOperator" target="_blank" rel="noopener">GitHub repository ↗</a>
+      <a href="https://github.com/Eshablink/ApexOperator/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
+      <a href="https://github.com/Eshablink/ApexOperator/blob/main/docs/SECURITY.md" target="_blank" rel="noopener">Security</a>
+    </nav>
+  </footer>
+
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
   <script src="/assets/app.js"></script>
   <script src="/assets/2026-interactions.js"></script>
+  <script src="/assets/control-room-enhancements.js"></script>
 </body>
 </html>

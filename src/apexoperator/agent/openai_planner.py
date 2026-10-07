@@ -15,6 +15,8 @@ from apexoperator.agent.runtime import (
 class OpenAIPlanner:
     """Optional LLM planner; AgentRuntime remains the authority boundary."""
 
+    mode = "openai"
+
     SYSTEM_PROMPT = """You are the planning component inside ApexOperator.
 
 Your only job is to choose the next governed tool call for a financial operations task.
