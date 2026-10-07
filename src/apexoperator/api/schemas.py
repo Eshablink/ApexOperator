@@ -27,7 +27,7 @@ class CreateTaskRequest(BaseModel):
 
 class ApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    comment: str | None = None
+    comment: str | None = Field(default=None, max_length=1000)
 
 
 class LoginRequest(BaseModel):
@@ -49,6 +49,7 @@ class LoginRequest(BaseModel):
         if len(value) < 12:
             raise ValueError("password must be at least 12 characters")
         return value
+
 
 class TaskResponse(BaseModel):
     task_id: str
