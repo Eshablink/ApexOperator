@@ -18,6 +18,8 @@ class SQLAlchemyTaskStore:
         requested_by: str,
         decision: str,
         justification: str | None,
+        planner_mode: str | None = None,
+        planner_model: str | None = None,
     ) -> None:
         with self.session_factory.begin() as session:
             session.add(
@@ -27,6 +29,8 @@ class SQLAlchemyTaskStore:
                     status=status,
                     requested_by=requested_by,
                     decision=decision,
+                    planner_mode=planner_mode,
+                    planner_model=planner_model,
                     justification=justification,
                 )
             )
@@ -116,6 +120,8 @@ class SQLAlchemyTaskStore:
             "status": row.status,
             "requested_by": row.requested_by,
             "decision": row.decision,
+            "planner_mode": row.planner_mode,
+            "planner_model": row.planner_model,
             "justification": row.justification,
             "reviewer": row.reviewer,
             "review_comment": row.review_comment,
