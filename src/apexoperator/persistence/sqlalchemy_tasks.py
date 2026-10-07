@@ -82,5 +82,9 @@ class SQLAlchemyTaskStore:
             "review_comment": row.review_comment,
         }
 
+    def reset_demo(self) -> None:
+        with self.session_factory.begin() as session:
+            session.query(TaskRecord).delete()
+
     def close(self) -> None:
         return None
