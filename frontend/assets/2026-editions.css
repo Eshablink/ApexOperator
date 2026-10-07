@@ -970,3 +970,10 @@ body::after{display:none}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}.boot-overlay,.review-modal,.detail-modal{transition:none}.operation-clickable{transition:none}
 }
+
+@media (max-width:820px){
+  .console-app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+  .app-sidebar{display:none}
+  .app-main{grid-column:1;grid-row:1;min-height:0}
+  .mobile-console-nav{grid-column:1;grid-row:2;width:100%}
+}
