@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -72,18 +73,37 @@ def create_app(
     api.state.service = service
     api.state.engine = engine
 
-    frontend_dir = Path(__file__).resolve().parents[3] / "frontend"
-    frontend_assets = frontend_dir / "assets"
-    if (frontend_dir / "index.html").is_file() and frontend_assets.is_dir():
-        api.mount(
-            "/assets",
-            StaticFiles(directory=str(frontend_assets)),
-            name="frontend-assets",
+    # When the package is installed into site-packages (as it is in the
+    # production Docker image), __file__ no longer lives under the repository
+    # root. Prefer the container's copied frontend directory, while retaining
+    # the repository-relative path for local/editable installs.
+    frontend_candidates = [
+        Path(os.getenv("APEX_FRONTEND_DIR", "/app/frontend")),
+        Path(__file__).resolve().parents[3] / "frontend",
+    ]
+    frontend_dir = next(
+        (
+            path
+            for path in frontend_candidates
+            if (path / "index.html").is_file() and (path / "assets").is_dir()
+        ),
+        None,
+    )
+    if frontend_dir is None:
+        raise RuntimeError(
+            "Frontend assets are missing; expected /app/frontend or a repository frontend directory"
         )
 
-        @api.get("/", include_in_schema=False)
-        def frontend_home() -> FileResponse:
-            return FileResponse(frontend_dir / "index.html")
+    frontend_assets = frontend_dir / "assets"
+    api.mount(
+        "/assets",
+        StaticFiles(directory=str(frontend_assets)),
+        name="frontend-assets",
+    )
+
+    @api.get("/", include_in_schema=False)
+    def frontend_home() -> FileResponse:
+        return FileResponse(frontend_dir / "index.html")
 
     @api.middleware("http")
     async def request_logging(request: Request, call_next):
