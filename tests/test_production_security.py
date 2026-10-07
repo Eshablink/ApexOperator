@@ -32,6 +32,8 @@ def test_production_settings_accept_strong_jwt_secret():
         app_env="production",
         database_url="postgresql+psycopg://user:pass@db/app",
         jwt_secret="x" * 48,
+        bootstrap_email="owner@example.com",
+        bootstrap_password_hash="scrypt$v1$16384$8$1$c2FsdA==$ZGlnZXN0",
     )
     assert settings.app_env == "production"
 
