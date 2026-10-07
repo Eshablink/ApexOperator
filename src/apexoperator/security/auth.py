@@ -6,8 +6,6 @@ import hmac
 import secrets
 from typing import Any
 
-from sqlalchemy.orm import sessionmaker
-
 import jwt
 from fastapi import HTTPException, status
 from jwt import InvalidTokenError
