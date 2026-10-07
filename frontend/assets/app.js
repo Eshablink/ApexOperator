@@ -733,10 +733,10 @@ async function loginProduction(event) {
     const result = await api("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: {
+      body: JSON.stringify({
         email: $("#loginEmail").value.trim(),
         password: $("#loginPassword").value,
-      },
+      }),
     });
     state.user = result;
     closeAuth();
