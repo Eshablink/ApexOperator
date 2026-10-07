@@ -4,7 +4,7 @@
 
 Open `http://127.0.0.1:8000/` after starting the API. The product landing page is the primary presentation surface.
 
-Click **Open live control room** and choose **Finance Manager**. The control room exposes live persisted task data, audit integrity, planner mode, runtime bounds, invoice processing, and explicit approve/reject actions.
+Click **Open live control room** and choose **Sign in as Finance Manager**. The control room exposes live persisted task data, audit integrity, planner mode, runtime bounds, invoice processing, and explicit approve/reject actions.
 
 ## Optional live AI planner
 
@@ -116,3 +116,15 @@ Spend the most time on the **control boundary**, not on the number of libraries.
 The strongest story is:
 
 **agent proposes → policy governs → human intervenes when required → execution verifies → audit proves what happened.**
+
+## 7. Show the trust boundary interactively
+
+Inside the control room, open an operation to see the task detail view. It separates **AI proposal** from the **policy decision** and the persisted audit timeline.
+
+Use **Simulate tampering** to alter a temporary copy of an audit event. The chain verification should detect the simulated modification while reporting that the persisted chain remains unchanged.
+
+Use **Export JSON** or **Export CSV** to download the audit evidence. **Reset demo data** is available only outside production and restores the audit chain to GENESIS.
+
+## 8. Cold-start behavior
+
+On a sleeping Render instance, the control room reports **Waking up the server, ~30s** and then exposes **Retry** if startup takes too long. This is intentional: a recruiter should see a controlled recovery state instead of a page that looks broken.
