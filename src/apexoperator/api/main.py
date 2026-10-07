@@ -191,6 +191,8 @@ def create_app(
 
     @api.post("/auth/logout")
     def auth_logout(request: Request, response: Response) -> dict[str, str]:
+        if settings.app_env == "production":
+            _require_csrf(request)
         token = _session_token(request)
         if token and settings.app_env == "production":
             request.app.state.authenticator.logout(token)
