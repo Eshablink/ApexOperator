@@ -17,6 +17,8 @@ class TaskRecord(Base):
     status: Mapped[str] = mapped_column(String(64), nullable=False)
     requested_by: Mapped[str] = mapped_column(String(128), nullable=False)
     decision: Mapped[str] = mapped_column(String(64), nullable=False)
+    planner_mode: Mapped[str | None] = mapped_column(String(32))
+    planner_model: Mapped[str | None] = mapped_column(String(128))
     justification: Mapped[str | None] = mapped_column(Text)
     reviewer: Mapped[str | None] = mapped_column(String(128))
     review_comment: Mapped[str | None] = mapped_column(Text)
