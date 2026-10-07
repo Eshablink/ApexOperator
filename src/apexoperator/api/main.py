@@ -19,7 +19,7 @@ from apexoperator.api.schemas import (
 from apexoperator.persistence.database import init_database, make_engine, make_session_factory
 from apexoperator.persistence.sqlalchemy_audit import SQLAlchemyAuditLedger
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
-from apexoperator.security.auth import InMemoryAuthenticator, Principal
+from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.service.approvals import ApprovalService
 
@@ -29,16 +29,26 @@ def create_app(
     workspace_dir: str | Path = "workspace",
     database_path: str | Path | None = None,
     database_url: str | None = None,
-    authenticator: InMemoryAuthenticator | None = None,
+    authenticator: InMemoryAuthenticator | JWTAuthenticator | None = None,
     planner = None,
 ) -> FastAPI:
-    authenticator = authenticator or InMemoryAuthenticator(
-        {
-            "dev-clerk-token": Principal("dev-clerk", Role.AP_CLERK),
-            "dev-manager-token": Principal("dev-manager", Role.FINANCE_MANAGER),
-            "dev-admin-token": Principal("dev-admin", Role.SYSTEM_ADMIN),
-        }
-    )
+    if authenticator is None:
+        if settings.app_env == "production":
+            if not settings.jwt_secret:
+                raise RuntimeError("production authentication requires JWT_SECRET")
+            authenticator = JWTAuthenticator(
+                secret=settings.jwt_secret,
+                issuer=settings.jwt_issuer,
+                audience=settings.jwt_audience,
+            )
+        else:
+            authenticator = InMemoryAuthenticator(
+                {
+                    "dev-clerk-token": Principal("dev-clerk", Role.AP_CLERK),
+                    "dev-manager-token": Principal("dev-manager", Role.FINANCE_MANAGER),
+                    "dev-admin-token": Principal("dev-admin", Role.SYSTEM_ADMIN),
+                }
+            )
 
     resolved_url = database_url or (settings.database_url if database_path is None else f"sqlite:///{Path(database_path).resolve()}")
     engine = make_engine(resolved_url)
@@ -127,7 +137,7 @@ def create_app(
             raise HTTPException(status_code=401, detail="authorization required")
         return request.app.state.authenticator.authenticate(token)
 
-    @api.get("/health")
+    @api.api_route("/health", methods=["GET", "HEAD"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
