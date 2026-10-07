@@ -327,8 +327,19 @@
     return state.user;
   }
 
+  function renderLoadingSkeleton() {
+    const body = $("#operationsBody");
+    if (!body) return;
+    body.innerHTML =
+      '<tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>' +
+      '<tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>' +
+      '<tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>';
+  }
+
   async function loadLive() {
     try {
+      if (!state.tasks.length) renderLoadingSkeleton();
+
       const user = await syncPrincipal();
       if (!user) return null;
 
@@ -343,6 +354,7 @@
       if (status) params.set("status", status);
 
       const data = await requestJson("/dashboard/data?" + params.toString());
+      if (typeof window.setApiHealth === "function") window.setApiHealth(true);
       state.tasks = data.tasks || [];
       state.total = Number(data.total || state.tasks.length);
       state.page = Number(data.page || state.page);
@@ -355,6 +367,7 @@
       syncDemoActions();
       return data;
     } catch (error) {
+      if (typeof window.setApiHealth === "function") window.setApiHealth(false);
       if (error.status === 401) {
         syncDemoActions();
         return null;
