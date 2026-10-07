@@ -351,7 +351,9 @@ def create_app(
             "tasks": tasks,
             "planner": {
                 "mode": settings.planner_mode,
-                "model": settings.openai_model if settings.planner_mode == "openai" else None,
+                "active": "openai" if settings.planner_mode == "auto" and "openai" in service.planners else settings.planner_mode,
+                "live_available": "openai" in service.planners,
+                "model": settings.openai_model if "openai" in service.planners else None,
                 "max_steps": request.app.state.service.runtime.MAX_STEPS,
                 "max_retries": request.app.state.service.runtime.MAX_RETRIES,
             },
