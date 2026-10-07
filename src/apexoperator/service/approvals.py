@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, Planner
+from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, MockPlanner, Planner
 from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
 from apexoperator.security.auth import Principal
@@ -24,7 +24,8 @@ class ApprovalService:
     ) -> None:
         self.task_store = task_store
         self.audit_ledger = audit_ledger
-        self.planners: dict[str, Planner | None] = {"mock": planner}
+        mock_planner = planner if getattr(planner, "mode", "mock") == "mock" else MockPlanner()
+        self.planners: dict[str, Planner] = {"mock": mock_planner}
         if openai_planner is not None:
             self.planners["openai"] = openai_planner
         self.default_planner_mode = getattr(planner, "mode", "mock")
