@@ -1,24 +1,54 @@
 # ApexOperator Deployment
 
-## Docker Compose
+## Render reference deployment
 
-The reference deployment runs the application with PostgreSQL while keeping the planner in deterministic mock mode by default.
+The application is deployed as a Docker web service with a Render PostgreSQL database in the same Singapore region.
+
+Required production environment variables:
+
+```text
+APP_ENV=production
+LOG_LEVEL=INFO
+DATABASE_URL=<Render internal PostgreSQL URL>
+JWT_SECRET=<random secret, at least 32 characters>
+APEX_PLANNER=mock
+```
+
+Optional JWT hardening:
+
+```text
+JWT_ISSUER=<expected issuer>
+JWT_AUDIENCE=<expected audience>
+```
+
+Do not commit secrets or place them in frontend code or browser local storage.
+
+## Authentication
+
+For a production deployment, provision JWTs from an approved identity provider and include:
+
+- `sub`
+- `roles` with exactly one supported role
+- `exp`
+
+The local demo authenticator is available only outside `APP_ENV=production`.
+
+## Health and readiness
+
+- `/health` — unauthenticated liveness check (GET/HEAD)
+- `/ready` — unauthenticated readiness check; validates database access and audit integrity
+
+## Local Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-Then open:
-
-- `http://127.0.0.1:8000/` — product landing page
-- `http://127.0.0.1:8000/docs` — API docs
-- `http://127.0.0.1:8000/ready` — readiness probe
-
-The compose stack deliberately does not require an external AI credential.
+The compose stack deliberately remains a demo/reference environment and does not require external identity credentials.
 
 ## Optional live OpenAI planner
 
-Set these environment variables for the same application image:
+Set:
 
 ```text
 APEX_PLANNER=openai
@@ -26,10 +56,4 @@ OPENAI_API_KEY=<your-key>
 OPENAI_MODEL=gpt-6-astra
 ```
 
-The live planner is optional. The deterministic runtime still enforces the allowed tool sequence, invoice identity, step bound, retry bound, RBAC, policy engine, human approval state, and audit chain.
-
-Do not place API keys in source control, the frontend, or browser local storage.
-
-## Production hardening still required
-
-This repository is a portfolio/reference implementation. A real deployment should add a real identity provider, TLS termination, secret management, rate limiting, centralized observability, durable externalized audit controls, and operational alerting.
+The deterministic runtime still enforces workflow state, identity, step/retry bounds, RBAC, policy, human approval, and audit controls.
