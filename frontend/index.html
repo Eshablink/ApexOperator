@@ -224,6 +224,7 @@
         <button class="side-link"><span>◌</span> Runtime</button>
         <div class="side-footer"><span class="avatar">FM</span><div><b>Finance Manager</b><small>Local demo access</small></div></div>
       </div>
+      <nav class="mobile-nav" aria-label="Control room mobile navigation"><button class="active" type="button">Overview</button><button type="button" id="mobileOperations">Operations</button><button type="button" id="mobileAudit">Audit</button><button type="button" id="mobileSystem">System</button></nav>
       <div class="app-main">
         <div class="connection-state hidden" id="connectionState" role="status" aria-live="polite"></div>
         <div class="app-topbar">
@@ -279,7 +280,7 @@
                 <div class="integrity-head"><span class="shield">✓</span><div><span>AUDIT INTEGRITY</span><strong id="auditStatus">Checking…</strong></div></div>
                 <div class="integrity-bar"><i></i></div>
                 <p>SHA-256 chained events make unauthorized payload, ordering or deletion changes detectable.</p>
-                <div class="audit-actions"><button class="ghost-btn" id="tamperBtn">Simulate tampering</button><button class="ghost-btn" id="exportAuditBtn">Export audit</button><button class="ghost-btn" id="resetDemoBtn">Reset demo data</button></div>
+                <div class="audit-actions"><button class="ghost-btn" id="tamperBtn">Simulate tampering</button><button class="ghost-btn" id="exportAuditBtn">Export JSON</button><button class="ghost-btn" id="exportAuditCsvBtn">Export CSV</button><button class="ghost-btn" id="resetDemoBtn">Reset demo data</button></div>
               </section>
             </aside>
           </div>
@@ -319,9 +320,9 @@
 
       <div id="demoAuth">
         <div class="role-grid">
-          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
-          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
-          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Sign in as Finance Manager</b><span>Review · approve · audit</span><i>Recommended</i></button>
+          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>Sign in as AP Clerk</b><span>Read · validate · submit</span><i>Operations access</i></button>
+          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>Sign in as System Admin</b><span>All governed permissions</span><i>Full access</i></button>
         </div>
       </div>
 
