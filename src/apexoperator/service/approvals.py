@@ -20,6 +20,7 @@ class ApprovalService:
         task_store: SQLAlchemyTaskStore,
         audit_ledger: Any,
         planner: Planner | None = None,
+        planners: dict[str, Planner] | None = None,
     ) -> None:
         self.task_store = task_store
         self.audit_ledger = audit_ledger
@@ -28,12 +29,16 @@ class ApprovalService:
         for tool in build_finance_tools(finance):
             self.registry.register(tool)
         self.runtime = AgentRuntime(self.registry, planner=planner)
+        self.planners = planners or {}
+        if planner is not None and "auto" not in self.planners:
+            self.planners["auto"] = planner
 
-    def _context(self, principal: Principal) -> ToolContext:
+    def _context(self, principal: Principal, task_id: str | None = None) -> ToolContext:
         return ToolContext(
             actor_id=principal.actor_id,
             role=principal.role,
             audit_ledger=self.audit_ledger,
+            task_id=task_id,
         )
 
     @staticmethod
@@ -47,16 +52,20 @@ class ApprovalService:
             None,
         )
 
-    def create_task(self, request: CreateTaskRequest, principal: Principal) -> TaskResponse:
+    def create_task(self, request: CreateTaskRequest, principal: Principal, planner_mode: str = "auto") -> TaskResponse:
         task_id = str(uuid4())
-        state = self.runtime.run(
+        selected = self.planners.get(planner_mode)
+        if selected is None:
+            raise HTTPException(status_code=503, detail=f"planner mode unavailable: {planner_mode}")
+        runtime = AgentRuntime(self.registry, planner=selected)
+        state = runtime.run(
             AgentTaskRequest(
                 task_id=task_id,
                 intent="process_invoice",
                 invoice_id=request.invoice_id,
                 justification=request.justification,
             ),
-            self._context(principal),
+            self._context(principal, task_id),
         )
 
         if state.status == "FAILED_PLANNER":
@@ -131,8 +140,11 @@ class ApprovalService:
         if row["status"] != TaskStatus.PENDING_HUMAN_APPROVAL.value:
             raise HTTPException(
                 status_code=409,
-                detail="task is not pending human approval",
+                detail="task is not pending human approval; decision already recorded",
             )
+        reason = (request.comment or "").strip()
+        if not reason:
+            raise HTTPException(status_code=422, detail="review reason is required")
 
         target_status = TaskStatus.APPROVED if approve else TaskStatus.REJECTED
         event_type = "HUMAN_APPROVAL_GRANTED" if approve else "HUMAN_APPROVAL_REJECTED"
@@ -164,6 +176,22 @@ class ApprovalService:
         if not self.audit_ledger.verify_integrity():
             raise HTTPException(status_code=500, detail="audit integrity failure")
         return result
+
+    def task_detail(self, task_id: str) -> dict[str, Any]:
+        row = self.task_store.get(task_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="task not found")
+        events = self.audit_ledger.list_events(task_id=task_id)
+        proposals = [
+            event for event in events if event["event_type"] == "PLANNER_PROPOSED"
+        ]
+        return {
+            "task": row,
+            "audit_events": events,
+            "planner_proposals": proposals,
+            "policy_decision": row["decision"],
+            "audit_integrity": self.audit_ledger.verify_integrity(),
+        }
 
     def verify_audit(self, principal: Principal) -> dict[str, bool]:
         if not RBAC.is_allowed(principal.role, Permission.AUDIT_VERIFY):
