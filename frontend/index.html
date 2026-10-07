@@ -257,7 +257,17 @@
             <section class="operations-panel">
               <div class="panel-toolbar">
                 <div><h3>Recent operations</h3><p id="recordHint">Loading persisted tasks…</p></div>
-                <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Filter invoice or task…" aria-label="Filter operations"><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
+                <div class="toolbar-tools">
+  <input id="taskFilter" type="search" placeholder="Search invoice or task…" aria-label="Search operations">
+  <select id="taskStatusFilter" aria-label="Filter by status">
+    <option value="">All status</option>
+    <option value="PENDING_HUMAN_APPROVAL">Pending</option>
+    <option value="AUTO_APPROVED">Auto approved</option>
+    <option value="APPROVED">Approved</option>
+    <option value="REJECTED">Rejected</option>
+  </select>
+  <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
+</div>
               </div>
               <div class="operation-table-wrap">
                 <table class="operation-table">
@@ -269,6 +279,7 @@
 </tbody>
                 </table>
               </div>
+              <div id="taskPagination" class="task-pagination" hidden></div>
             </section>
 
             <aside class="right-rail">
@@ -418,5 +429,6 @@
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
   <script src="/assets/app.js"></script>
   <script src="/assets/2026-interactions.js"></script>
+  <script src="/assets/control-room-enhancements.js"></script>
 </body>
 </html>
