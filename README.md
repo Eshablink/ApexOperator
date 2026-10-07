@@ -220,6 +220,10 @@ See [docs/SECURITY.md](docs/SECURITY.md).
 
 ApexOperator supports two planner modes.
 
+### auto
+
+Safe default: prefer the configured OpenAI planner, otherwise use the deterministic planner with no external credential.
+
 ### mock
 
 Deterministic local planning for:
@@ -374,7 +378,7 @@ Useful endpoints:
 | APP_ENV | development | Application environment |
 | LOG_LEVEL | INFO | Structured logging level |
 | DATABASE_URL | sqlite:///./apexoperator.db | Local persistence |
-| APEX_PLANNER | mock | Planner mode |
+| APEX_PLANNER | auto | Planner mode: auto, mock or openai |
 | OPENAI_API_KEY | empty | Optional live planner credential |
 | OPENAI_MODEL | configured in settings | OpenAI planner model |
 
