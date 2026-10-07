@@ -68,6 +68,8 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     requested_by: str
     decision: str
+    planner_mode: str | None = None
+    planner_model: str | None = None
     justification: str | None = None
     reviewer: str | None = None
     review_comment: str | None = None
