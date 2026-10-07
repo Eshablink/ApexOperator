@@ -30,6 +30,26 @@ class ApprovalRequest(BaseModel):
     comment: str | None = None
 
 
+class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        value = value.strip().lower()
+        if "@" not in value or len(value) > 320:
+            raise ValueError("valid email is required")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if len(value) < 12:
+            raise ValueError("password must be at least 12 characters")
+        return value
+
 class TaskResponse(BaseModel):
     task_id: str
     invoice_id: str
