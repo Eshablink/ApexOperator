@@ -608,6 +608,7 @@ async function openTaskDetail(taskId) {
   state.lastFocus = document.activeElement;
   $("#taskDetailModal")?.classList.add("open");
   $("#taskDetailModal")?.setAttribute("aria-hidden", "false");
+  window.setTimeout(() => trapFocus($("#taskDetailModal")), 30);
   $("#taskDetailSubtitle").textContent = "Loading audit timeline…";
   $("#detailProposals").innerHTML = '<div class="detail-empty">Loading planner proposals…</div>';
   $("#detailTimeline").innerHTML = '<div class="detail-empty">Loading audit events…</div>';
@@ -834,6 +835,24 @@ $("#pageNext")?.addEventListener("click", () => {
   renderTasks();
 });
 $("#loginForm")?.addEventListener("submit", loginProduction);
+
+function setMobileNavActive(targetId) {
+  $(".mobile-nav button").forEach(button => button.classList.toggle("active", button.id === targetId));
+}
+
+$("#mobileOperations")?.addEventListener("click", () => {
+  setMobileNavActive("mobileOperations");
+  $(".operations-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("#mobileAudit")?.addEventListener("click", () => {
+  setMobileNavActive("mobileAudit");
+  $("#integrityPanel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+$("#mobileSystem")?.addEventListener("click", () => {
+  setMobileNavActive("mobileSystem");
+  $(".action-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
 $("#tamperBtn")?.addEventListener("click", simulateTampering);
 $("#exportAuditBtn")?.addEventListener("click", () => downloadAudit("json"));
 $("#exportAuditCsvBtn")?.addEventListener("click", () => downloadAudit("csv"));
