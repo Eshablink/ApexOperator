@@ -20,14 +20,24 @@ class ApprovalService:
         task_store: SQLAlchemyTaskStore,
         audit_ledger: Any,
         planner: Planner | None = None,
+        openai_planner: Planner | None = None,
     ) -> None:
         self.task_store = task_store
         self.audit_ledger = audit_ledger
+        self.planners: dict[str, Planner | None] = {"mock": planner}
+        if openai_planner is not None:
+            self.planners["openai"] = openai_planner
+        self.default_planner_mode = getattr(planner, "mode", "mock")
         self.registry = ToolRegistry()
         finance = FinanceToolset(workspace_dir)
         for tool in build_finance_tools(finance):
             self.registry.register(tool)
         self.runtime = AgentRuntime(self.registry, planner=planner)
+        self.runtimes = {
+            mode: AgentRuntime(self.registry, planner=item)
+            for mode, item in self.planners.items()
+            if item is not None
+        }
 
     def _context(self, principal: Principal) -> ToolContext:
         return ToolContext(
@@ -49,7 +59,11 @@ class ApprovalService:
 
     def create_task(self, request: CreateTaskRequest, principal: Principal) -> TaskResponse:
         task_id = str(uuid4())
-        state = self.runtime.run(
+        planner_mode = request.planner_mode or self.default_planner_mode
+        runtime = self.runtimes.get(planner_mode)
+        if runtime is None:
+            raise HTTPException(status_code=503, detail="live LLM planner is not configured")
+        state = runtime.run(
             AgentTaskRequest(
                 task_id=task_id,
                 intent="process_invoice",
@@ -113,6 +127,29 @@ class ApprovalService:
             raise HTTPException(status_code=404, detail="task not found")
         return TaskResponse.model_validate(row)
 
+    def get_task_detail(self, task_id: str) -> dict[str, Any]:
+        row = self.task_store.get(task_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="task not found")
+        timeline = self.audit_ledger.list_for_task(task_id)
+        proposals = [
+            {
+                "timestamp": event["timestamp"],
+                "planner_mode": event["after_state"].get("planner_mode"),
+                "model": event["after_state"].get("model"),
+                "proposed_tool": event["after_state"].get("proposed_tool"),
+                "input_data": event["after_state"].get("input_data", {}),
+            }
+            for event in timeline
+            if event["event_type"] == "PLANNER_PROPOSAL"
+        ]
+        return {
+            **row,
+            "audit_timeline": timeline,
+            "planner_proposals": proposals,
+            "policy_decision": row["decision"],
+        }
+
     def review_task(
         self,
         task_id: str,
@@ -125,40 +162,49 @@ class ApprovalService:
         if not RBAC.is_allowed(principal.role, permission):
             raise HTTPException(status_code=403, detail="permission denied")
 
+        if request.comment is None or len(request.comment.strip()) < 3:
+            raise HTTPException(status_code=422, detail="review reason is required")
+
         row = self.task_store.get(task_id)
         if row is None:
             raise HTTPException(status_code=404, detail="task not found")
         if row["status"] != TaskStatus.PENDING_HUMAN_APPROVAL.value:
             raise HTTPException(
                 status_code=409,
-                detail="task is not pending human approval",
+                detail=f"task already decided: {row['status']}",
             )
 
         target_status = TaskStatus.APPROVED if approve else TaskStatus.REJECTED
         event_type = "HUMAN_APPROVAL_GRANTED" if approve else "HUMAN_APPROVAL_REJECTED"
-        self.audit_ledger.append_event(
-            str(uuid4()),
-            event_type,
-            event_type.lower(),
-            {
-                "task_id": task_id,
-                "invoice_id": row["invoice_id"],
-                "reviewer": principal.actor_id,
-                "comment": request.comment,
-                "from_status": row["status"],
-                "to_status": target_status.value,
-            },
-        )
 
         transitioned = self.task_store.transition_review(
             task_id,
             from_status=TaskStatus.PENDING_HUMAN_APPROVAL.value,
             to_status=target_status.value,
             reviewer=principal.actor_id,
-            review_comment=request.comment,
+            review_comment=request.comment.strip(),
         )
         if not transitioned:
-            raise HTTPException(status_code=409, detail="task changed before review")
+            current = self.task_store.get(task_id)
+            current_status = current["status"] if current else "UNKNOWN"
+            raise HTTPException(
+                status_code=409,
+                detail=f"task already decided: {current_status}",
+            )
+
+        self.audit_ledger.append_event(
+            f"review:{task_id}:{target_status.value}",
+            event_type,
+            event_type.lower(),
+            {
+                "task_id": task_id,
+                "invoice_id": row["invoice_id"],
+                "reviewer": principal.actor_id,
+                "comment": request.comment.strip(),
+                "from_status": row["status"],
+                "to_status": target_status.value,
+            },
+        )
 
         result = self.get_task(task_id)
         if not self.audit_ledger.verify_integrity():
@@ -169,3 +215,8 @@ class ApprovalService:
         if not RBAC.is_allowed(principal.role, Permission.AUDIT_VERIFY):
             raise HTTPException(status_code=403, detail="permission denied")
         return {"integrity_valid": self.audit_ledger.verify_integrity()}
+
+
+    def reset_demo(self) -> None:
+        self.task_store.reset()
+        self.audit_ledger.reset()
