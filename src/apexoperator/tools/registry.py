@@ -21,6 +21,7 @@ class ToolContext:
     actor_id: str
     role: Role
     audit_ledger: CryptographicAuditLedger
+    task_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ class ToolRegistry:
                     "role": context.role.value,
                     "tool": name,
                     "permission": tool.permission.value,
+                    "task_id": context.task_id,
                 },
             )
             return ToolResult(
@@ -97,6 +99,7 @@ class ToolRegistry:
                     "actor_id": context.actor_id,
                     "role": context.role.value,
                     "tool": name,
+                    "task_id": context.task_id,
                     "success": True,
                     "data": data,
                 },
@@ -110,6 +113,7 @@ class ToolRegistry:
                     "actor_id": context.actor_id,
                     "role": context.role.value,
                     "tool": name,
+                    "task_id": context.task_id,
                     "success": False,
                     "error_type": type(exc).__name__,
                 },

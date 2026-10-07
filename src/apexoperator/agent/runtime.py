@@ -184,7 +184,25 @@ class AgentRuntime:
 
                 if pending_call is None:
                     state.status = "COMPLETED"
+                    context.audit_ledger.append_event(
+                        f"planner-stop:{request.task_id}:{state.steps}",
+                        "PLANNER_STOPPED",
+                        "planner_stopped",
+                        {"task_id": request.task_id, "steps": state.steps},
+                    )
                     return state
+
+                context.audit_ledger.append_event(
+                    f"planner-proposed:{request.task_id}:{state.steps}",
+                    "PLANNER_PROPOSED",
+                    "planner_proposed",
+                    {
+                        "task_id": request.task_id,
+                        "step": state.steps,
+                        "tool_name": pending_call.tool_name,
+                        "input_data": pending_call.input_data,
+                    },
+                )
 
                 if not self._plan_is_allowed(request, state, pending_call):
                     return self._invalid_plan(

@@ -63,3 +63,28 @@ def test_live_dashboard_data_requires_audit_read(tmp_path):
     assert allowed.status_code == 200
     assert allowed.json()["audit_ok"] is True
     assert isinstance(allowed.json()["tasks"], list)
+
+
+def test_public_home_has_security_headers(tmp_path):
+    client = make_client(tmp_path)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert "default-src 'self'" in response.headers["content-security-policy"]
+
+
+def test_auth_config_exposes_safe_planner_capability(tmp_path):
+    client = make_client(tmp_path)
+    response = client.get("/auth/config")
+    assert response.status_code == 200
+    planner = response.json()["planner"]
+    assert planner["selection"] in {"auto", "mock", "openai"}
+    assert isinstance(planner["live_available"], bool)
+
+
+def test_dashboard_data_exposes_active_planner(tmp_path):
+    client = make_client(tmp_path)
+    response = client.get("/dashboard/data", headers=auth("manager-token"))
+    assert response.status_code == 200
+    assert response.json()["planner"]["active"] in {"auto", "mock", "openai"}

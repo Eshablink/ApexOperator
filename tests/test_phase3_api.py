@@ -199,3 +199,78 @@ def test_ready_and_secured_dashboard(tmp_path):
     assert "Pending approval" in allowed.text
 
 
+
+
+def test_task_detail_contains_planner_and_audit_events(tmp_path):
+    client = make_client(tmp_path)
+    created = client.post(
+        "/tasks",
+        json={"invoice_id": "INV-HIGH-001", "justification": "Threshold review"},
+        headers=auth("clerk-token"),
+    ).json()
+    response = client.get(f"/tasks/{created['task_id']}/detail", headers=auth("manager-token"))
+    assert response.status_code == 200
+    body = response.json()
+    assert body["policy_decision"] == "HUMAN_ESCALATION_REQUIRED"
+    assert body["planner_proposals"]
+    assert body["audit_integrity"] is True
+
+
+def test_review_requires_reason_and_is_idempotent(tmp_path):
+    client = make_client(tmp_path)
+    task = client.post(
+        "/tasks",
+        json={"invoice_id": "INV-HIGH-001"},
+        headers=auth("clerk-token"),
+    ).json()
+    missing_reason = client.post(
+        f"/tasks/{task['task_id']}/approve",
+        json={},
+        headers=auth("manager-token"),
+    )
+    assert missing_reason.status_code == 422
+    assert "reason is required" in missing_reason.json()["detail"]
+    approved = client.post(
+        f"/tasks/{task['task_id']}/approve",
+        json={"comment": "Verified threshold and invoice totals."},
+        headers=auth("manager-token"),
+    )
+    second = client.post(
+        f"/tasks/{task['task_id']}/approve",
+        json={"comment": "Second click."},
+        headers=auth("manager-token"),
+    )
+    assert approved.status_code == 200
+    assert second.status_code == 409
+    assert "already recorded" in second.json()["detail"]
+
+
+def test_audit_tamper_demo_does_not_mutate_persisted_chain(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/tasks", json={"invoice_id": "INV-LOW-001"}, headers=auth("clerk-token"))
+    demo = client.post("/audit/tamper-demo", headers=auth("manager-token"))
+    assert demo.status_code == 200
+    body = demo.json()
+    assert body["simulated_tamper_detected"] is True
+    assert body["persisted_chain_unchanged"] is True
+
+
+def test_audit_export_supports_json_and_csv(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/tasks", json={"invoice_id": "INV-LOW-001"}, headers=auth("clerk-token"))
+    json_export = client.get("/audit/export?format=json", headers=auth("manager-token"))
+    csv_export = client.get("/audit/export?format=csv", headers=auth("manager-token"))
+    assert json_export.status_code == 200
+    assert json_export.headers["content-type"].startswith("application/json")
+    assert csv_export.status_code == 200
+    assert csv_export.headers["content-type"].startswith("text/csv")
+
+
+def test_demo_reset_clears_tasks_and_audit_chain(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/tasks", json={"invoice_id": "INV-LOW-001"}, headers=auth("clerk-token"))
+    reset = client.post("/demo/reset", headers=auth("manager-token"))
+    assert reset.status_code == 200
+    data = client.get("/dashboard/data", headers=auth("manager-token")).json()
+    assert data["tasks"] == []
+    assert data["audit_ok"] is True

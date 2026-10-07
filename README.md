@@ -170,13 +170,15 @@ The project includes a recruiter-facing product experience rather than only an A
 ### Operations control room
 
 - live task KPIs;
-- filterable persisted operations;
-- approve/reject actions;
-- audit-integrity indicator;
-- planner/runtime status;
-- quick invoice processing;
-- explicit loading, error and success states;
-- responsive mobile layout.
+- searchable/status-filtered operations with pagination;
+- one-click development role access;
+- task detail view with AI proposals, policy outcome and audit timeline;
+- approve/reject actions with mandatory review reason and conditional state transition;
+- live planner selection with safe deterministic fallback;
+- audit-integrity verification plus a non-destructive tamper simulation;
+- JSON/CSV audit export and development-only demo reset;
+- cold-start, loading, retry and explicit success/error states;
+- responsive mobile navigation and operator cards.
 
 ### 2026 UX layer
 
@@ -217,6 +219,10 @@ See [docs/SECURITY.md](docs/SECURITY.md).
 ## 🤖 Planner modes
 
 ApexOperator supports two planner modes.
+
+### auto
+
+Safe default: prefer the configured OpenAI planner, otherwise use the deterministic planner with no external credential.
 
 ### mock
 
@@ -351,9 +357,13 @@ Useful endpoints:
 | GET /dashboard/data | Live dashboard data |
 | POST /tasks | Start governed invoice workflow |
 | GET /tasks/{task_id} | Inspect persisted task |
-| POST /tasks/{task_id}/approve | Human approval |
-| POST /tasks/{task_id}/reject | Human rejection |
+| GET /tasks/{task_id}/detail | Task + planner + audit detail |
+| POST /tasks/{task_id}/approve | Human approval with reason |
+| POST /tasks/{task_id}/reject | Human rejection with reason |
 | GET /audit/verify | Verify audit integrity |
+| POST /audit/tamper-demo | Non-destructive chain tamper simulation |
+| GET /audit/export?format=json\|csv | Export audit evidence |
+| POST /demo/reset | Reset development demo state |
 | POST /auth/login | Production login |
 | POST /auth/logout | Production logout |
 
@@ -368,7 +378,7 @@ Useful endpoints:
 | APP_ENV | development | Application environment |
 | LOG_LEVEL | INFO | Structured logging level |
 | DATABASE_URL | sqlite:///./apexoperator.db | Local persistence |
-| APEX_PLANNER | mock | Planner mode |
+| APEX_PLANNER | auto | Planner mode: auto, mock or openai |
 | OPENAI_API_KEY | empty | Optional live planner credential |
 | OPENAI_MODEL | configured in settings | OpenAI planner model |
 
@@ -417,7 +427,9 @@ Render PostgreSQL
 
 The live reference service is available at:
 
-**https://apexoperator.onrender.com**
+**https://apexoperator.onrender.com/**
+
+The public page includes Open Graph/Twitter metadata, a favicon, a repository link, an architecture link, and the live control-room entry point.
 
 ### Render environment
 
@@ -433,7 +445,7 @@ APEX_BOOTSTRAP_ROLE=FINANCE_MANAGER
 APEX_SESSION_MINUTES=60
 ~~~
 
-The hosted reference/demo can remain in development/demo auth mode until real operator credentials are provisioned.
+The hosted reference/demo can remain in development/demo auth mode until real operator credentials are provisioned. On a sleeping free-tier instance, the UI explicitly surfaces a cold-start state and retry path rather than displaying an ambiguous loading spinner.
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 

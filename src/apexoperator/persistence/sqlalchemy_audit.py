@@ -120,6 +120,73 @@ class SQLAlchemyAuditLedger:
         except IntegrityError as exc:
             raise ValueError(f"duplicate or conflicting audit event: {event_id}") from exc
 
+
+    def list_events(self, *, task_id: str | None = None, limit: int = 500) -> list[dict[str, Any]]:
+        if limit < 1 or limit > 1000:
+            raise ValueError("audit event limit must be between 1 and 1000")
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AuditEventRecord).order_by(AuditEventRecord.sequence_id.asc()).limit(limit)
+            ).all()
+            events = []
+            for row in rows:
+                state = row.after_state if isinstance(row.after_state, dict) else {}
+                if task_id is not None and state.get("task_id") != task_id:
+                    continue
+                events.append({
+                    "sequence_id": row.sequence_id,
+                    "event_id": row.event_id,
+                    "timestamp": row.timestamp,
+                    "event_type": row.event_type,
+                    "action": row.action,
+                    "after_state": state,
+                    "previous_hash": row.previous_hash,
+                    "event_hash": row.event_hash,
+                })
+            return events
+
+    def simulate_tamper(self) -> dict[str, Any]:
+        events = self.list_events(limit=1000)
+        if not events:
+            return {"simulated_tamper_detected": False, "reason": "no_events"}
+        tampered = [dict(event) for event in events]
+        tampered[0]["after_state"] = dict(tampered[0]["after_state"])
+        tampered[0]["after_state"]["__tampered_demo__"] = True
+        previous = GENESIS_HASH
+        detected = False
+        for index, event in enumerate(tampered):
+            if event["sequence_id"] != index or event["previous_hash"] != previous:
+                detected = True
+                break
+            candidate = {
+                "sequence_id": event["sequence_id"],
+                "timestamp": event["timestamp"],
+                "event_id": event["event_id"],
+                "event_type": event["event_type"],
+                "action": event["action"],
+                "after_state": event["after_state"],
+                "previous_hash": event["previous_hash"],
+            }
+            if self._hash_event(candidate) != event["event_hash"]:
+                detected = True
+                break
+            previous = event["event_hash"]
+        return {
+            "simulated_tamper_detected": detected,
+            "persisted_chain_unchanged": self.verify_integrity(),
+            "sample_sequence_id": tampered[0]["sequence_id"],
+        }
+
+    def reset_demo(self) -> None:
+        with self.session_factory.begin() as session:
+            session.query(AuditEventRecord).delete()
+            meta = session.get(AuditLedgerMeta, 1)
+            if meta is None:
+                session.add(AuditLedgerMeta(singleton=1, head_sequence_id=-1, head_event_hash=GENESIS_HASH))
+            else:
+                meta.head_sequence_id = -1
+                meta.head_event_hash = GENESIS_HASH
+
     def verify_integrity(self) -> bool:
         with self.session_factory() as session:
             rows = session.scalars(

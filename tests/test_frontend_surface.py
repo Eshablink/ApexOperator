@@ -16,8 +16,13 @@ def test_frontend_surface_exists_and_has_product_positioning():
     assert "Operations Control Room" in index
     assert "dashboard/data" in js
     assert "Run governed workflow" in index
+    assert "Waking up the server, ~30s" in js
+    assert "Simulate tampering" in index
+    assert "task-detail-modal" in index
+    assert "Export JSON" in index
+    assert "Live LLM" in index
     assert len(css) > 10000
-    assert len(js) > 7000
+    assert len(js) > 10000
 
 
 def test_frontend_assets_are_not_placeholder_shells():

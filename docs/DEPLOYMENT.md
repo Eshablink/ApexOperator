@@ -71,3 +71,24 @@ The compose stack remains a deterministic demo/reference environment.
 ## UI/UX
 
 The public product surface uses a responsive, keyboard-friendly control-room experience with live API status, audit integrity feedback, secure-session state, and a command palette on Ctrl/Cmd+K.
+
+## Cold-start behavior
+
+The Render free tier may sleep an idle service. The control room treats the first request as a recoverable cold start: it shows a waking message, uses a bounded request timeout, and exposes a Retry action rather than leaving visitors on indefinite placeholders.
+
+For portfolio/demo availability, an external uptime monitor such as UptimeRobot can request the public `/health` endpoint every 10 minutes. This is optional and should be configured outside the repository; no monitoring credentials belong in the app.
+
+## HTTP security headers
+
+The FastAPI app adds:
+
+- `Content-Security-Policy`
+- `Strict-Transport-Security` in HTTPS production requests
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- restrictive `Permissions-Policy`
+
+## Planner selection
+
+Set `APEX_PLANNER=auto` to prefer the configured OpenAI planner and fall back to the deterministic planner when no provider key exists. The control room also exposes a per-run planner selector; selecting the live planner requires the deployment to have `OPENAI_API_KEY` configured.
