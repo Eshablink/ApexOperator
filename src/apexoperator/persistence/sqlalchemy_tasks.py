@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import sessionmaker
 
 from apexoperator.persistence.models import TaskRecord
@@ -38,12 +38,51 @@ class SQLAlchemyTaskStore:
                 return None
             return self._dict(row)
 
-    def list_recent(self, limit: int = 50) -> list[dict[str, Any]]:
+    def list_recent(
+        self,
+        limit: int = 50,
+        *,
+        query: str | None = None,
+        status: str | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
         with self.session_factory() as session:
+            statement = select(TaskRecord)
+            if query:
+                needle = f"%{query.strip()}%"
+                statement = statement.where(
+                    (TaskRecord.task_id.ilike(needle))
+                    | (TaskRecord.invoice_id.ilike(needle))
+                    | (TaskRecord.requested_by.ilike(needle))
+                    | (TaskRecord.status.ilike(needle))
+                )
+            if status:
+                statement = statement.where(TaskRecord.status == status)
             rows = session.scalars(
-                select(TaskRecord).order_by(TaskRecord.created_at.desc()).limit(limit)
+                statement.order_by(TaskRecord.created_at.desc())
+                .offset(max(0, offset))
+                .limit(min(max(1, limit), 200))
             ).all()
             return [self._dict(row) for row in rows]
+
+    def count(self, *, query: str | None = None, status: str | None = None) -> int:
+        with self.session_factory() as session:
+            statement = select(func.count()).select_from(TaskRecord)
+            if query:
+                needle = f"%{query.strip()}%"
+                statement = statement.where(
+                    (TaskRecord.task_id.ilike(needle))
+                    | (TaskRecord.invoice_id.ilike(needle))
+                    | (TaskRecord.requested_by.ilike(needle))
+                    | (TaskRecord.status.ilike(needle))
+                )
+            if status:
+                statement = statement.where(TaskRecord.status == status)
+            return int(session.scalar(statement) or 0)
+
+    def reset(self) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(delete(TaskRecord))
 
     def transition_review(
         self,
