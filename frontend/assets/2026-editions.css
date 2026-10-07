@@ -149,6 +149,10 @@ body::after{display:none}
   font-weight:750;
 }
 .ed-hero h1 span{color:#fff}
+.ed-hero h1 strong{
+  color:var(--ed-lime);
+  font-weight:inherit;
+}
 .ed-hero h1 em{
   color:var(--ed-lime);
   font-style:normal;
