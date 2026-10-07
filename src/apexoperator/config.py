@@ -10,7 +10,7 @@ class Settings(BaseModel):
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./apexoperator.db")
     )
     planner_mode: str = Field(
-        default_factory=lambda: os.getenv("APEX_PLANNER", "mock")
+        default_factory=lambda: os.getenv("APEX_PLANNER", "auto")
     )
     openai_api_key: str | None = Field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY")
@@ -72,8 +72,8 @@ class Settings(BaseModel):
     @field_validator("planner_mode")
     @classmethod
     def validate_planner_mode(cls, value: str) -> str:
-        if value not in {"mock", "openai"}:
-            raise ValueError("APEX_PLANNER must be 'mock' or 'openai'")
+        if value not in {"auto", "mock", "openai"}:
+            raise ValueError("APEX_PLANNER must be 'auto', 'mock' or 'openai'")
         return value
 
 
