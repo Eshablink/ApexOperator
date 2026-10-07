@@ -49,6 +49,8 @@ class PlannerDecision(BaseModel):
 
 
 class MockPlanner:
+    mode = "mock"
+
     def plan(
         self, request: AgentTaskRequest, state: AgentTaskState
     ) -> PlannedToolCall | None:
