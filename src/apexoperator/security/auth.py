@@ -6,6 +6,8 @@ import hmac
 import secrets
 from typing import Any
 
+from sqlalchemy.orm import sessionmaker
+
 import jwt
 from fastapi import HTTPException, status
 from jwt import InvalidTokenError
@@ -109,7 +111,7 @@ class JWTAuthenticator:
     def __init__(
         self,
         *,
-        session_factory: sessionmaker,
+        session_factory: sessionmaker | None = None,
         secret: str,
         issuer: str | None = None,
         audience: str | None = None,
@@ -145,7 +147,9 @@ class JWTAuthenticator:
 
     def login(self, email: str, password: str) -> tuple[str, Principal, str, int]:
         normalized = email.strip().lower()
-        with self._sessions() as session:
+        if self._sessions is None:
+            raise RuntimeError("database session factory is required for login")
+        with self._sessions.begin() as session:
             user = session.scalar(select(UserRecord).where(UserRecord.email == normalized))
             if user is None or not user.is_active or not verify_password(password, user.password_hash):
                 raise HTTPException(
@@ -202,6 +206,9 @@ class JWTAuthenticator:
         except ValueError as exc:
             raise HTTPException(status_code=403, detail="token role is not supported") from exc
 
+        if self._sessions is None:
+            return Principal(actor_id=actor_id, role=role)
+
         with self._sessions() as session:
             auth_session = session.get(AuthSessionRecord, session_id)
             user = session.get(UserRecord, actor_id)
@@ -224,6 +231,8 @@ class JWTAuthenticator:
         return Principal(actor_id=actor_id, role=role)
 
     def csrf_for_session(self, token: str) -> str:
+        if self._sessions is None:
+            raise RuntimeError("database session factory is required for csrf retrieval")
         payload = self._decode(token)
         session_id = str(payload["sid"])
         with self._sessions() as session:
@@ -233,6 +242,8 @@ class JWTAuthenticator:
             return auth_session.csrf_token
 
     def logout(self, token: str) -> None:
+        if self._sessions is None:
+            raise RuntimeError("database session factory is required for logout")
         payload = self._decode(token)
         session_id = str(payload["sid"])
         with self._sessions.begin() as session:
