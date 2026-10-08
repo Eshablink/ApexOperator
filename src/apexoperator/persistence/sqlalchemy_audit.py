@@ -83,7 +83,7 @@ class SQLAlchemyAuditLedger:
 
         try:
             with self.session_factory.begin() as session:
-                meta = session.get(AuditLedgerMeta, 1)
+                # Serialize writers on the ledger head so concurrent requests cannot\n                # allocate the same sequence id / previous hash. PostgreSQL honors\n                # this row lock; SQLite safely ignores FOR UPDATE.\n                meta = session.get(AuditLedgerMeta, 1, with_for_update=True)
                 if meta is None:
                     raise RuntimeError("audit metadata missing")
 
