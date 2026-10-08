@@ -199,3 +199,19 @@ def test_ready_and_secured_dashboard(tmp_path):
     assert "Pending approval" in allowed.text
 
 
+
+
+def test_approval_requires_reason(tmp_path):
+    client = make_client(tmp_path)
+    task = client.post(
+        "/tasks",
+        json={"invoice_id": "INV-HIGH-001"},
+        headers=auth("clerk-token"),
+    ).json()
+
+    response = client.post(
+        f"/tasks/{task['task_id']}/approve",
+        json={},
+        headers=auth("manager-token"),
+    )
+    assert response.status_code == 422
