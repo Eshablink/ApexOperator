@@ -3,6 +3,7 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const state = {
   token: "",
+  loading: false,
   authMode: "development",
   user: null,
   tasks: [],
@@ -81,11 +82,29 @@ function apiHeaders() {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    ...options,
-    headers: { ...apiHeaders(), ...(options.headers || {}) },
-  });
+  const controller = new AbortController();
+  const timeoutMs = options.timeoutMs ?? (path === "/dashboard/data" ? 35000 : 20000);
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  const { timeoutMs: _timeoutMs, signal: externalSignal, ...fetchOptions } = options;
+  if (externalSignal) externalSignal.addEventListener("abort", () => controller.abort(), { once: true });
+  let response;
+  try {
+    response = await fetch(path, {
+      credentials: "same-origin",
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: { ...apiHeaders(), ...(fetchOptions.headers || {}) },
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      const timeoutError = new Error("The server is waking up. This can take about 30 seconds on a cold start.");
+      timeoutError.code = "TIMEOUT";
+      throw timeoutError;
+    }
+    throw new Error("Unable to reach the ApexOperator API. Check your connection and retry.");
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
   const contentType = response.headers.get("content-type") || "";
   const body = contentType.includes("application/json") ? await response.json() : await response.text();
   if (!response.ok) {
@@ -204,18 +223,46 @@ function renderTasks() {
   });
 }
 
+function setLiveState(kind, message) {
+  const node = $("#liveState");
+  const retry = $("#retryBtn");
+  if (!node) return;
+  node.classList.toggle("hidden", !message);
+  node.className = `live-state ${kind || ""} ${message ? "" : "hidden"}`;
+  node.innerHTML = message ? `<strong>${kind === "error" ? "Connection issue" : "Waking the server"}</strong><span>${message}</span>` : "";
+  retry?.classList.toggle("hidden", kind !== "error");
+}
+
+function setLoadingSurface() {
+  state.loading = true;
+  setApiHealth(false);
+  const pill = $("#apiPill");
+  if (pill) pill.innerHTML = "<b></b> WAKING SERVER · ~30S";
+  $("#recordHint") && ($("#recordHint").textContent = "Waking the server · first request may take ~30s");
+  const body = $("#operationsBody");
+  if (body) {
+    body.innerHTML = Array.from({ length: 4 }, () => '<tr class="skeleton-row"><td><span></span><span></span></td><td><span></span></td><td><span></span></td><td><span></span></td><td><span></span></td></tr>').join("");
+  }
+  setLiveState("loading", "The service may be waking from a cold start. Your data will appear automatically when it is ready.");
+}
+
 async function loadLive() {
+  setLoadingSurface();
   try {
     const data = await api("/dashboard/data");
+    state.loading = false;
     state.tasks = data.tasks || [];
     state.auditOk = data.audit_ok;
     setApiHealth(true);
+    setLiveState("", "");
+    $("#retryBtn")?.classList.add("hidden");
     renderKpis();
     renderTasks();
     updateAudit(data.audit_ok);
     updatePlanner(data.planner);
     setAuthBadge();
   } catch (error) {
+    state.loading = false;
     setApiHealth(false);
     if (error.status === 401) {
       state.user = null;
@@ -225,8 +272,14 @@ async function loadLive() {
       toast("Your session is no longer valid.", "error");
       return;
     }
-    if (state.token || state.user) toast(error.message, "error");
-    $("#recordHint").textContent = "Unable to load live operations";
+    if (state.token || state.user) {
+      const message = error.code === "TIMEOUT"
+        ? "The service did not wake within 35 seconds. Nothing was lost—try again."
+        : error.message;
+      setLiveState("error", message);
+      $("#recordHint").textContent = "Live data could not be loaded";
+      toast(message, "error");
+    }
   }
 }
 
@@ -325,7 +378,7 @@ function syncAuthSurface() {
     lede.textContent = "Your session is protected by server-side JWT validation, revocable database sessions and CSRF checks.";
     foot.innerHTML = "<span>SECURE SESSION</span><span>HttpOnly cookie · revocable server session</span>";
   } else {
-    kicker.textContent = "RECRUITER DEMO ACCESS";
+    kicker.textContent = "INTERACTIVE DEMO ACCESS";
     title.textContent = "Open the control room.";
     lede.textContent = "Use a deterministic demo role to explore the governed workflow without external credentials.";
     foot.innerHTML = "<span>DEMO ONLY</span><span>No real money movement</span>";
@@ -397,6 +450,7 @@ $("#closeAuth")?.addEventListener("click", closeAuth);
 $("#verifyBtn")?.addEventListener("click", verifyAudit);
 $("#processBtn")?.addEventListener("click", processInvoice);
 $("#refreshBtn")?.addEventListener("click", loadLive);
+$("#retryBtn")?.addEventListener("click", loadLive);
 $("#taskFilter")?.addEventListener("input", renderTasks);
 $("#loginForm")?.addEventListener("submit", loginProduction);
 
@@ -429,7 +483,6 @@ $$(".role-card").forEach(card => {
     };
     setAuthBadge();
     openConsole();
-    await loadLive();
     if ($("#apiPill")?.classList.contains("good")) toast("Demo control room connected.");
   });
 });
