@@ -12,6 +12,8 @@ const state = {
   commandOpen: false,
   page: 1,
   reviewBusy: false,
+  initialized: false,
+  pendingDemoRole: null,
 };
 
 const storageKey = "apexoperator_demo_token";
@@ -227,6 +229,19 @@ function closeTaskDetail() {
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
   deactivateDialog(modal.querySelector(".task-detail-card") || modal);
+}
+
+function applyDemoRole(card) {
+  state.authMode = "development";
+  state.token = card.dataset.token || "";
+  sessionStorage.setItem(storageKey, state.token);
+  state.user = {
+    role: card.dataset.role || "FINANCE_MANAGER",
+    actor_id: card.dataset.actor || "demo-user",
+  };
+  closeAuth();
+  setAuthBadge();
+  openConsole();
 }
 
 function syncRoleControls() {
@@ -799,7 +814,13 @@ async function init() {
     setAuthBadge();
     endNetworkWait();
     await restoreSession();
+    state.initialized = true;
     setAuthBadge();
+    if (state.pendingDemoRole) {
+      const card = state.pendingDemoRole;
+      state.pendingDemoRole = null;
+      applyDemoRole(card);
+    }
   } catch (error) {
     state.authMode = "development";
     syncAuthSurface();
@@ -870,17 +891,14 @@ function bindEvents() {
     }
   });
 
-  $$(".role-card").forEach(card => {
-    card.addEventListener("click", async () => {
-      state.token = card.dataset.token || "";
-      sessionStorage.setItem(storageKey, state.token);
-      state.user = {
-        role: card.dataset.role || "FINANCE_MANAGER",
-        actor_id: card.dataset.actor || "demo-user",
-      };
-      closeAuth();
-      setAuthBadge();
-      openConsole();
+  $(".role-card").forEach(card => {
+    card.addEventListener("click", () => {
+      if (!state.initialized) {
+        state.pendingDemoRole = card;
+        toast("Preparing your demo session…");
+        return;
+      }
+      applyDemoRole(card);
     });
   });
 
