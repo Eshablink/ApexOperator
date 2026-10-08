@@ -19,7 +19,6 @@ const PAGE_SIZE = 8;
 const REQUEST_TIMEOUT_MS = 65000;
 let networkTimer = 0;
 let activeDialog = null;
-let lastFocused = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -132,17 +131,20 @@ function focusable(root) {
 }
 
 function activateDialog(dialog) {
-  lastFocused = document.activeElement;
+  dialog._apexReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
   activeDialog = dialog;
   window.setTimeout(() => focusable(dialog)[0]?.focus(), 30);
 }
 
 function deactivateDialog(dialog) {
   if (activeDialog === dialog) activeDialog = null;
-  if (lastFocused && document.contains(lastFocused)) {
-    window.setTimeout(() => lastFocused.focus(), 0);
+  const returnFocus = dialog._apexReturnFocus;
+  dialog._apexReturnFocus = null;
+  if (returnFocus && document.contains(returnFocus)) {
+    window.setTimeout(() => returnFocus.focus(), 0);
   }
-  lastFocused = null;
 }
 
 function openAuth() {
