@@ -27,6 +27,22 @@ class TaskRecord(Base):
     )
 
 
+class TaskEvidenceRecord(Base):
+    __tablename__ = "task_evidence"
+
+    task_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    planner_mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    planner_model: Mapped[str | None] = mapped_column(String(128))
+    planner_fallback: Mapped[bool] = mapped_column(default=False, nullable=False)
+    proposals: Mapped[Any] = mapped_column(JSON, nullable=False)
+    policy_decision: Mapped[Any | None] = mapped_column(JSON)
+    created_at: Mapped[str] = mapped_column(
+        String(64),
+        default=lambda: datetime.now(timezone.utc).isoformat(),
+        nullable=False,
+    )
+
+
 class AuditEventRecord(Base):
     __tablename__ = "audit_events"
 
