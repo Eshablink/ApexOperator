@@ -13,7 +13,7 @@ class TaskRecord(Base):
     __tablename__ = "tasks"
 
     task_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    invoice_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    invoice_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False)
     requested_by: Mapped[str] = mapped_column(String(128), nullable=False)
     decision: Mapped[str] = mapped_column(String(64), nullable=False)
