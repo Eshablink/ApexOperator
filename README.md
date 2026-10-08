@@ -11,7 +11,7 @@
 >
 > **AI handles ambiguity. Deterministic software handles authority.**
 
-[**Live demo →**](https://apexoperator.onrender.com) · [**Architecture**](docs/ARCHITECTURE.md) · [**Security model**](docs/SECURITY.md) · [**Demo guide**](docs/DEMO.md)
+[**Live demo →**](https://apexoperator.onrender.com) · [**Architecture**](docs/ARCHITECTURE.md) · [**Security model**](docs/SECURITY.md) · [**Demo guide**](docs/DEMO.md) · [**Uptime guide**](docs/UPTIME.md)
 
 ---
 
@@ -184,11 +184,13 @@ The latest product pass adds:
 
 - secure-session status in the shell;
 - production login surface;
-- keyboard-first command palette with Ctrl/Cmd + K;
-- visible keyboard focus states;
+- keyboard-first command palette with Ctrl/Cmd + K and focus trapping;
+- dialog-style auth and operation-detail surfaces with Escape and focus restoration;
+- visible keyboard focus states and status icons;
 - reduced-motion support;
 - high-signal status/risk treatments;
-- responsive layouts that preserve task density without feeling like a legacy admin panel.
+- mobile operation cards and bottom navigation;
+- Shopify Editions Spring '26-inspired editorial visual language using original ApexOperator styling.
 
 ---
 
@@ -348,12 +350,16 @@ Useful endpoints:
 | GET /health | Liveness |
 | GET /ready | Readiness + persistence/audit checks |
 | GET /dashboard | Control-room application |
-| GET /dashboard/data | Live dashboard data |
+| GET /dashboard/data | Live dashboard data, filters and pagination |
 | POST /tasks | Start governed invoice workflow |
 | GET /tasks/{task_id} | Inspect persisted task |
-| POST /tasks/{task_id}/approve | Human approval |
-| POST /tasks/{task_id}/reject | Human rejection |
+| GET /tasks/{task_id}/detail | Task detail, planner evidence and audit timeline |
+| POST /tasks/{task_id}/approve | Human approval with mandatory reason |
+| POST /tasks/{task_id}/reject | Human rejection with mandatory reason |
 | GET /audit/verify | Verify audit integrity |
+| GET /audit/export | Export audit JSON or CSV |
+| POST /audit/demo/tamper | Development tamper demonstration |
+| POST /demo/reset | Development data reset for admin |
 | POST /auth/login | Production login |
 | POST /auth/logout | Production logout |
 
@@ -433,7 +439,7 @@ APEX_BOOTSTRAP_ROLE=FINANCE_MANAGER
 APEX_SESSION_MINUTES=60
 ~~~
 
-The hosted reference/demo can remain in development/demo auth mode until real operator credentials are provisioned.
+The hosted reference/demo can remain in development/demo auth mode until real operator credentials are provisioned. The hosted service may sleep on the free tier; the UI shows an explicit wake-up state instead of presenting blank placeholders. See [docs/UPTIME.md](docs/UPTIME.md) for an optional external health monitor.
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
