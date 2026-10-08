@@ -77,6 +77,23 @@ def test_create_high_value_task_creates_real_pending_approval(tmp_path):
     assert body["task_id"]
 
 
+def test_duplicate_invoice_submission_is_idempotent(tmp_path):
+    client = make_client(tmp_path)
+    payload = {"invoice_id": "INV-LOW-001", "justification": "First submission"}
+
+    first = client.post("/tasks", json=payload, headers=auth("clerk-token"))
+    second = client.post(
+        "/tasks",
+        json={"invoice_id": "INV-LOW-001", "justification": "Duplicate submission"},
+        headers=auth("clerk-token"),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["task_id"] == first.json()["task_id"]
+    assert second.json()["status"] == "AUTO_APPROVED"
+
+
 def test_get_task_reads_persisted_task(tmp_path):
     client = make_client(tmp_path)
     created = client.post(

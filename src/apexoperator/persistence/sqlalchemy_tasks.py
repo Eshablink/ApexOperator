@@ -31,6 +31,17 @@ class SQLAlchemyTaskStore:
                 )
             )
 
+    def get_by_invoice_id(self, invoice_id: str) -> dict[str, Any] | None:
+        with self.session_factory() as session:
+            row = session.scalars(
+                select(TaskRecord)
+                .where(TaskRecord.invoice_id == invoice_id)
+                .order_by(TaskRecord.created_at.desc())
+            ).first()
+            if row is None:
+                return None
+            return self._dict(row)
+
     def get(self, task_id: str) -> dict[str, Any] | None:
         with self.session_factory() as session:
             row = session.get(TaskRecord, task_id)
