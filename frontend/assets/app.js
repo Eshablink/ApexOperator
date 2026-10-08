@@ -178,6 +178,8 @@ function renderTasks() {
   }
 
   body.innerHTML = "";
+  const mobile = $("#operationsMobile");
+  if (mobile) mobile.innerHTML = "";
   tasks.forEach(task => {
     const row = document.createElement("tr");
 
@@ -220,6 +222,40 @@ function renderTasks() {
 
     row.append(operation, status, requested, reviewer, actions);
     body.appendChild(row);
+
+    if (mobile) {
+      const card = document.createElement("article");
+      card.className = "operation-card";
+      card.innerHTML = `
+        <div class="operation-card-top">
+          <div><strong></strong><small></small></div>
+          <span class="mini-tag ${statusClass(task.status)}"></span>
+        </div>
+        <div class="operation-card-meta">
+          <span>Requested by <b></b></span>
+          <span>Reviewer <b></b></span>
+        </div>
+      `;
+      card.querySelector("strong").textContent = task.invoice_id;
+      card.querySelector(".operation-card-top small").textContent = task.task_id;
+      card.querySelector(".mini-tag").textContent = statusLabel(task.status);
+      const meta = card.querySelectorAll(".operation-card-meta b");
+      meta[0].textContent = task.requested_by || "—";
+      meta[1].textContent = task.reviewer || "—";
+      if (task.status === "PENDING_HUMAN_APPROVAL" && state.user?.role !== "AP_CLERK") {
+        const actionsRow = document.createElement("div");
+        actionsRow.className = "operation-card-actions";
+        for (const [approve, label] of [[true, "Approve"], [false, "Reject"]]) {
+          const button = document.createElement("button");
+          button.className = `table-action${approve ? "" : " reject"}`;
+          button.textContent = label;
+          button.addEventListener("click", () => reviewTask(task.task_id, approve));
+          actionsRow.appendChild(button);
+        }
+        card.appendChild(actionsRow);
+      }
+      mobile.appendChild(card);
+    }
   });
 }
 
