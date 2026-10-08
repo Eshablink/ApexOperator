@@ -227,6 +227,14 @@ function closeTaskDetail() {
   deactivateDialog(modal.querySelector(".task-detail-card") || modal);
 }
 
+function syncRoleControls() {
+  const isAdmin = state.user?.role === "SYSTEM_ADMIN";
+  const tamper = $("#tamperBtn");
+  const reset = $("#resetDemoBtn");
+  if (tamper) tamper.hidden = !["FINANCE_MANAGER", "SYSTEM_ADMIN"].includes(state.user?.role);
+  if (reset) reset.hidden = !isAdmin;
+}
+
 function setAuthBadge() {
   const badge = $("#sessionBadge");
   if (!badge) return;
@@ -239,6 +247,7 @@ function setAuthBadge() {
       ? "<b></b> SECURE LOGIN REQUIRED"
       : "<b></b> DEMO MODE";
   }
+  syncRoleControls();
 }
 
 function setApiHealth(ok, label = null) {
