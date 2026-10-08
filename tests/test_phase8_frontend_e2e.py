@@ -98,8 +98,13 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             try:
                 expect(page.locator("#apiPill")).to_contain_text("API READY", timeout=15000)
             except AssertionError:
+                probe = page.request.get(
+                    base + "/dashboard/data",
+                    headers={"Authorization": "Bearer dev-manager-token"},
+                )
                 raise AssertionError(
                     f"frontend errors={page_errors!r}; console_errors={console_errors!r}; "
+                    f"probe_status={probe.status}; probe_body={probe.text()[:500]!r}; "
                     f"record_hint={page.locator('#recordHint').inner_text()!r}; "
                     f"wake_message={page.locator('#wakeMessage').inner_text()!r}"
                 )
