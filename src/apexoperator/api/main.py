@@ -19,6 +19,8 @@ from apexoperator.api.schemas import (
     CreateTaskRequest,
     TaskResponse,
     DocumentProcessResponse,
+    CreateUserRequest,
+    UserResponse,
 )
 from apexoperator.persistence.database import init_database, make_engine, make_session_factory
 from apexoperator.documents.extract import ExtractionError, InvoiceDocumentExtractor
@@ -26,6 +28,8 @@ from apexoperator.documents.security import DocumentSecurityError
 from apexoperator.domain.invoice import Invoice
 from apexoperator.persistence.sqlalchemy_audit import SQLAlchemyAuditLedger
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
+from apexoperator.persistence.models import UserRecord
+from apexoperator.security.auth import hash_password
 from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal, ensure_bootstrap_user
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.service.approvals import ApprovalService
@@ -53,6 +57,7 @@ def create_app(
                 email=settings.bootstrap_email,
                 password_hash=settings.bootstrap_password_hash,
                 role=Role(settings.bootstrap_role),
+                organization_id=settings.organization_id,
             )
             authenticator = JWTAuthenticator(
                 session_factory=sessions,
@@ -65,9 +70,9 @@ def create_app(
         else:
             authenticator = InMemoryAuthenticator(
                 {
-                    "dev-clerk-token": Principal("dev-clerk", Role.AP_CLERK),
-                    "dev-manager-token": Principal("dev-manager", Role.FINANCE_MANAGER),
-                    "dev-admin-token": Principal("dev-admin", Role.SYSTEM_ADMIN),
+                    "dev-clerk-token": Principal("dev-clerk", Role.AP_CLERK, "demo"),
+                    "dev-manager-token": Principal("dev-manager", Role.FINANCE_MANAGER, "demo"),
+                    "dev-admin-token": Principal("dev-admin", Role.SYSTEM_ADMIN, "demo"),
                 }
             )
     task_store = SQLAlchemyTaskStore(sessions)
@@ -181,7 +186,7 @@ def create_app(
     @api.get("/auth/me")
     def auth_me(request: Request) -> dict[str, str]:
         current = principal(request)
-        return {"actor_id": current.actor_id, "role": current.role.value}
+        return {"actor_id": current.actor_id, "role": current.role.value, "organization_id": current.organization_id}
 
     @api.post("/auth/login")
     def auth_login(body: LoginRequest, request: Request, response: Response) -> dict[str, str]:
@@ -191,6 +196,26 @@ def create_app(
         response.set_cookie(key=JWTAuthenticator.SESSION_COOKIE, value=token, max_age=max_age, httponly=True, secure=True, samesite="lax", path="/")
         response.set_cookie(key=JWTAuthenticator.CSRF_COOKIE, value=csrf_token, max_age=max_age, httponly=False, secure=True, samesite="lax", path="/")
         return {"actor_id": current.actor_id, "role": current.role.value}
+
+    @api.post("/admin/users", response_model=UserResponse)
+    def create_user(body: CreateUserRequest, request: Request) -> UserResponse:
+        current = principal(request)
+        if current.role != Role.SYSTEM_ADMIN:
+            raise HTTPException(status_code=403, detail="system administrator permission required")
+        with sessions.begin() as session:
+            if session.scalar(select(UserRecord).where(UserRecord.email == body.email)) is not None:
+                raise HTTPException(status_code=409, detail="email already registered")
+            user = UserRecord(
+                actor_id=f"user-{__import__("secrets").token_hex(8)}",
+                email=body.email,
+                organization_id=current.organization_id,
+                role=body.role,
+                password_hash=hash_password(body.password),
+                is_active=True,
+            )
+            session.add(user)
+            session.flush()
+            return UserResponse(actor_id=user.actor_id, email=user.email, role=user.role, organization_id=user.organization_id, is_active=user.is_active)
 
     @api.post("/auth/logout")
     def auth_logout(request: Request, response: Response) -> dict[str, str]:
@@ -269,7 +294,7 @@ def create_app(
         )
     @api.get("/tasks/{task_id}", response_model=TaskResponse)
     def get_task(task_id: str, request: Request) -> TaskResponse:
-        return request.app.state.service.get_task(task_id)
+        return request.app.state.service.get_task(task_id, principal(request))
 
     @api.post("/tasks/{task_id}/approve", response_model=TaskResponse)
     def approve_task(task_id: str, body: ApprovalRequest, request: Request) -> TaskResponse:
@@ -289,7 +314,7 @@ def create_app(
         if not RBAC.is_allowed(reviewer.role, Permission.AUDIT_READ):
             raise HTTPException(status_code=403, detail="permission denied")
 
-        tasks = request.app.state.service.task_store.list_recent(50)
+        tasks = request.app.state.service.list_tasks(reviewer, 50)
         counts: dict[str, int] = {}
         for task in tasks:
             status = str(task["status"])
