@@ -89,13 +89,22 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             page.get_by_role("button", name="Open live control room").first.click()
             expect(page.get_by_text("Open the control room.")).to_be_visible()
 
-            page.get_by_role("button", name="Finance Manager").click()
+            page.get_by_role("button", name="Sign in as Finance Manager").click()
             expect(page.locator("#apiPill")).to_contain_text("API READY")
 
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
             expect(page.locator(".mini-tag.pending").first).to_contain_text("PENDING HUMAN APPROVAL")
 
-            page.get_by_role("button", name="Approve").first.click()
+            page.get_by_role("button", name="Open INV-HIGH-001 operation detail").click()
+            expect(page.locator("#taskDetailTitle")).to_have_text("INV-HIGH-001")
+            expect(page.locator("#taskDetailBody")).to_contain_text("MODEL OUTPUT · UNTRUSTED")
+            expect(page.locator("#taskDetailBody")).to_contain_text("APPLICATION POLICY")
+
+            page.get_by_role("button", name="Approve").last.click()
+            expect(page.locator("#reviewReason")).to_be_visible()
+            # Approval requires an explicit reason and uses the idempotent transition.
+            page.get_by_label("Decision reason · required").fill("Verified invoice against source and policy.")
+            page.get_by_role("button", name="Approve").click()
             expect(page.locator(".toast.success", has_text="APPROVED")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("APPROVED")
 
