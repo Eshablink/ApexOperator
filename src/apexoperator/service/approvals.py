@@ -2,6 +2,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, Planner
 from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
@@ -100,14 +101,21 @@ class ApprovalService:
                     detail=approval.error if approval else "approval submission missing",
                 )
 
-        self.task_store.create(
-            task_id,
-            request.invoice_id,
-            status.value,
-            principal.actor_id,
-            decision,
-            request.justification,
-        )
+        try:
+            self.task_store.create(
+                task_id,
+                request.invoice_id,
+                status.value,
+                principal.actor_id,
+                decision,
+                request.justification,
+            )
+        except IntegrityError:
+            existing = self.task_store.get_by_invoice_id(request.invoice_id)
+            if existing is None:
+                raise
+            return TaskResponse.model_validate(existing)
+
         row = self.task_store.get(task_id)
         return TaskResponse.model_validate(row)
 
@@ -140,19 +148,6 @@ class ApprovalService:
 
         target_status = TaskStatus.APPROVED if approve else TaskStatus.REJECTED
         event_type = "HUMAN_APPROVAL_GRANTED" if approve else "HUMAN_APPROVAL_REJECTED"
-        self.audit_ledger.append_event(
-            str(uuid4()),
-            event_type,
-            event_type.lower(),
-            {
-                "task_id": task_id,
-                "invoice_id": row["invoice_id"],
-                "reviewer": principal.actor_id,
-                "comment": request.comment,
-                "from_status": row["status"],
-                "to_status": target_status.value,
-            },
-        )
 
         transitioned = self.task_store.transition_review(
             task_id,
@@ -163,6 +158,23 @@ class ApprovalService:
         )
         if not transitioned:
             raise HTTPException(status_code=409, detail="task changed before review")
+
+        try:
+            self.audit_ledger.append_event(
+                str(uuid4()),
+                event_type,
+                event_type.lower(),
+                {
+                    "task_id": task_id,
+                    "invoice_id": row["invoice_id"],
+                    "reviewer": principal.actor_id,
+                    "comment": request.comment,
+                    "from_status": row["status"],
+                    "to_status": target_status.value,
+                },
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail="audit write failure") from exc
 
         result = self.get_task(task_id)
         if not self.audit_ledger.verify_integrity():
