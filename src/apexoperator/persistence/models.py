@@ -13,6 +13,7 @@ class TaskRecord(Base):
     __tablename__ = "tasks"
 
     task_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(String(128), nullable=False, default="default", index=True)
     invoice_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False)
     requested_by: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -53,6 +54,7 @@ class UserRecord(Base):
 
     actor_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
+    organization_id: Mapped[str] = mapped_column(String(128), nullable=False, default="default", index=True)
     role: Mapped[str] = mapped_column(String(64), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
