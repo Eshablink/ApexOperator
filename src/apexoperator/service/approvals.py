@@ -10,7 +10,7 @@ from apexoperator.domain.invoice import Invoice
 from apexoperator.policy.engine import DeterministicPolicyEngine
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
 from apexoperator.security.auth import Principal
-from apexoperator.security.rbac import Permission, RBAC
+from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.tools.finance import FinanceToolset, build_finance_tools
 from apexoperator.tools.registry import ToolContext, ToolRegistry
 
