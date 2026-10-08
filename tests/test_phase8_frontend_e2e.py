@@ -84,6 +84,10 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 900})
+            page_errors = []
+            console_errors = []
+            page.on("pageerror", lambda error: page_errors.append(str(error)))
+            page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
             page.goto(base + "/", wait_until="networkidle")
 
             expect(page.get_by_text("AI that")).to_be_visible()
@@ -91,7 +95,14 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             expect(page.get_by_text("Open the control room.")).to_be_visible()
 
             page.get_by_role("button", name="Sign in as Finance Manager").click()
-            expect(page.locator("#apiPill")).to_contain_text("API READY")
+            try:
+                expect(page.locator("#apiPill")).to_contain_text("API READY", timeout=15000)
+            except AssertionError:
+                raise AssertionError(
+                    f"frontend errors={page_errors!r}; console_errors={console_errors!r}; "
+                    f"record_hint={page.locator('#recordHint').inner_text()!r}; "
+                    f"wake_message={page.locator('#wakeMessage').inner_text()!r}"
+                )
 
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
             expect(page.locator(".mini-tag.pending").first).to_contain_text("PENDING HUMAN APPROVAL")
