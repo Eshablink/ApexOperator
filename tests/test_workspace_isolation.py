@@ -73,3 +73,27 @@ def test_same_invoice_id_can_exist_in_different_workspaces(tmp_path):
     )
     assert client.app.state.service.task_store.get_by_invoice_id("INV-SHARED-001", "org-a")["task_id"] == "task-a"
     assert client.app.state.service.task_store.get_by_invoice_id("INV-SHARED-001", "org-b")["task_id"] == "task-b"
+
+
+def test_system_admin_can_provision_workspace_user(tmp_path):
+    auth = InMemoryAuthenticator({
+        "admin": Principal("admin", Role.SYSTEM_ADMIN, "org-a"),
+        "clerk": Principal("clerk", Role.AP_CLERK, "org-a"),
+    })
+    client = TestClient(create_app(database_path=tmp_path / "app.sqlite3", authenticator=auth))
+
+    denied = client.post(
+        "/admin/users",
+        headers={"Authorization": "Bearer clerk"},
+        json={"email": "new@example.com", "password": "long-secure-password", "role": "AP_CLERK"},
+    )
+    assert denied.status_code == 403
+
+    created = client.post(
+        "/admin/users",
+        headers={"Authorization": "Bearer admin"},
+        json={"email": "new@example.com", "password": "long-secure-password", "role": "AP_CLERK"},
+    )
+    assert created.status_code == 200
+    assert created.json()["email"] == "new@example.com"
+    assert created.json()["organization_id"] == "org-a"
