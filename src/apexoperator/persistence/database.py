@@ -23,7 +23,8 @@ def init_database(engine: Engine) -> None:
         _add_column_if_missing(connection, "users", "organization_id")
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_tasks_organization_id ON tasks (organization_id)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_organization_id ON users (organization_id)"))
-        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tasks_invoice_id ON tasks (invoice_id)"))
+        connection.execute(text("DROP INDEX IF EXISTS uq_tasks_invoice_id"))
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tasks_org_invoice ON tasks (organization_id, invoice_id)"))
 
 
 def make_session_factory(engine: Engine):
