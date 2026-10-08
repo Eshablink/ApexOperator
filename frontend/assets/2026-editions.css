@@ -873,3 +873,112 @@ body::after{display:none}
 @media (prefers-reduced-motion:reduce){
   .ed-hero-noise,.ed-orb-a,.ed-orb-b,.ed-main-card,.ed-marquee-track{animation:none!important}
 }
+
+
+/* Phase A — resilient live states + mobile control-room treatment */
+.hidden{display:none!important}
+.retry-btn{
+  border:1px solid rgba(109,67,255,.24);
+  background:rgba(109,67,255,.07);
+  color:#6d43ff;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:9px;
+  font-weight:850;
+  cursor:pointer;
+}
+.live-state{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:14px 18px 0;
+  padding:12px 14px;
+  border:1px solid rgba(109,67,255,.14);
+  border-radius:14px;
+  background:rgba(109,67,255,.055);
+  color:#5e536f;
+  font-size:10px;
+}
+.live-state strong{color:#33265f;letter-spacing:.04em}
+.live-state.error{
+  border-color:rgba(255,111,125,.22);
+  background:rgba(255,111,125,.055);
+}
+.live-state.error strong{color:#a72e40}
+.skeleton-row td{height:52px}
+.skeleton-row td span{
+  display:block;
+  height:8px;
+  width:70%;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(148,163,184,.10),rgba(148,163,184,.22),rgba(148,163,184,.10));
+  background-size:200% 100%;
+  animation:ao-skeleton 1.25s ease-in-out infinite;
+}
+.skeleton-row td:nth-child(1) span{width:85%}
+.skeleton-row td:nth-child(4) span{width:55%}
+@keyframes ao-skeleton{to{background-position:-200% 0}}
+.ed-sample-badge{
+  display:inline-flex;
+  margin:14px 18px 0;
+  padding:7px 10px;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:999px;
+  color:rgba(255,255,255,.58);
+  background:rgba(255,255,255,.045);
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:.12em;
+}
+@media(max-width:650px){
+  .app-actions{gap:5px}
+  .planner-pill{display:none}
+  .health-pill{font-size:7px}
+  .app-content{padding:14px}
+  .panel-toolbar{padding:14px}
+  .operation-table-wrap{display:none}
+  .operations-mobile{display:grid}
+  .operations-panel{overflow:visible}
+  .operation-card{
+    margin:0 14px 10px;
+    padding:14px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:14px;
+    background:rgba(255,255,255,.018);
+  }
+  .operation-card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .operation-card-top strong{display:block;font-size:11px;color:#eef2f8}
+  .operation-card-top small{display:block;margin-top:4px;color:#5e6a80;font-size:8px}
+  .operation-card-meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:13px;
+    padding-top:11px;
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+  .operation-card-meta span{font-size:8px;color:#667389;line-height:1.4}
+  .operation-card-meta b{display:block;margin-top:3px;color:#c7cfdd;font-weight:700}
+  .operation-card-actions{display:flex;gap:7px;margin-top:12px}
+  .operation-card-actions .table-action{flex:1}
+  .operations-mobile:empty::after{
+    content:"No operations match this filter.";
+    display:block;
+    margin:0 14px 14px;
+    padding:18px;
+    border:1px dashed rgba(148,163,184,.14);
+    border-radius:14px;
+    color:#657287;
+    font-size:10px;
+    text-align:center;
+  }
+  .ed-sample-badge{margin-left:14px;margin-right:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .skeleton-row td span{animation:none}
+}

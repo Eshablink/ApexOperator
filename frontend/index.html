@@ -156,13 +156,13 @@
 
       <div class="ed-control-grid">
         <article class="ed-control-card ed-control-a">
-          <div class="ed-control-top"><span>A</span><b>00 → 05K</b></div>
+          <div class="ed-control-top"><span>A</span><b>UP TO ₹5,000</b></div>
           <h3>AUTO<br>APPROVE</h3>
           <p>Consistent invoices at or below threshold move without unnecessary friction.</p>
           <div class="ed-control-foot"><span>CONSISTENT</span><strong>₹5,000</strong></div>
         </article>
         <article class="ed-control-card ed-control-b">
-          <div class="ed-control-top"><span>B</span><b>05K → ∞</b></div>
+          <div class="ed-control-top"><span>B</span><b>ABOVE ₹5,000</b></div>
           <h3>HUMAN<br>APPROVAL</h3>
           <p>Higher-value work becomes a persisted approval state tied to the exact task.</p>
           <div class="ed-control-foot"><span>REVIEW REQUIRED</span><strong>&gt; ₹5,000</strong></div>
@@ -183,6 +183,7 @@
       </div>
       <div class="ed-console-frame">
         <div class="ed-console-bar"><span>APEXOPERATOR / CONTROL ROOM</span><b><i></i> API READY</b><b><i></i> AUDIT VALID</b></div>
+        <div class="ed-sample-badge" aria-label="Sample data">SAMPLE DATA · MARKETING PREVIEW</div>
         <div class="ed-console-stats">
           <div><span>PENDING</span><strong>03</strong><small>needs attention</small></div>
           <div><span>AUTO</span><strong>18</strong><small>within policy</small></div>
@@ -237,6 +238,8 @@
                 <div><h3>Recent operations</h3><p id="recordHint">Loading persisted tasks…</p></div>
                 <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Filter invoice or task…" aria-label="Filter operations"><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
               </div>
+              <div id="liveState" class="live-state hidden" role="status" aria-live="polite"></div>
+              <div id="operationsMobile" class="operations-mobile" aria-label="Mobile operations list"></div>
               <div class="operation-table-wrap">
                 <table class="operation-table">
                   <thead><tr><th>Operation</th><th>Status</th><th>Requested by</th><th>Reviewer</th><th></th></tr></thead>
@@ -274,7 +277,7 @@
         <div class="auth-logo"><span class="brand-mark"><span></span><span></span><span></span></span></div>
         <span class="security-chip"><b></b> Protected workspace</span>
       </div>
-      <div class="eyebrow" id="authKicker">RECRUITER DEMO ACCESS</div>
+      <div class="eyebrow" id="authKicker">INTERACTIVE DEMO ACCESS</div>
       <h2 id="authTitle">Open the control room.</h2>
       <p id="authLede">Use a deterministic demo role to explore the governed workflow without external credentials.</p>
 
@@ -298,9 +301,9 @@
 
       <div id="demoAuth">
         <div class="role-grid">
-          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
-          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
-          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Sign in as Finance Manager</b><span>Review · approve · audit</span><i>One click · no credentials required</i></button>
+          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>Sign in as AP Clerk</b><span>Read · validate · submit</span><i>One click · no credentials required</i></button>
+          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>Sign in as System Admin</b><span>All governed permissions</span><i>One click · no credentials required</i></button>
         </div>
       </div>
 
