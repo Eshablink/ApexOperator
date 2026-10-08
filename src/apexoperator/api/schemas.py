@@ -14,7 +14,15 @@ class TaskStatus(str, Enum):
 class CreateTaskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     invoice_id: str
-    justification: str | None = None
+    justification: str | None = Field(default=None, max_length=4000)
+
+    @field_validator("justification")
+    @classmethod
+    def normalize_justification(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
     @field_validator("invoice_id")
     @classmethod
