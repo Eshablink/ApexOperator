@@ -208,7 +208,7 @@ def create_app(
             if session.scalar(select(UserRecord).where(UserRecord.email == body.email)) is not None:
                 raise HTTPException(status_code=409, detail="email already registered")
             user = UserRecord(
-                actor_id=f"user-{secrets.token_hex(8)},
+                actor_id=f"user-{secrets.token_hex(8)}",
                 email=body.email,
                 organization_id=current.organization_id,
                 role=body.role,
