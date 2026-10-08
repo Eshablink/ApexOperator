@@ -36,6 +36,7 @@ class Settings(BaseModel):
     bootstrap_role: str = Field(
         default_factory=lambda: os.getenv("APEX_BOOTSTRAP_ROLE", "FINANCE_MANAGER")
     )
+    organization_id: str = Field(default_factory=lambda: os.getenv("APEX_ORGANIZATION_ID", "default"))
     session_minutes: int = Field(
         default_factory=lambda: int(os.getenv("APEX_SESSION_MINUTES", "60"))
     )

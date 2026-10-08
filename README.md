@@ -358,7 +358,7 @@ Useful endpoints:
 | POST /tasks/{task_id}/reject | Human rejection |
 | GET /audit/verify | Verify audit integrity |
 | POST /auth/login | Production login |
-| POST /auth/logout | Production logout |
+| POST /auth/logout | Production logout |\n| POST /admin/users | System-admin-only user provisioning inside the current workspace |
 
 ---
 
@@ -402,7 +402,7 @@ The live control room supports a real user workflow, not only the seeded demo in
 | APEX_BOOTSTRAP_PASSWORD_HASH | Yes | scrypt password hash |
 | APEX_BOOTSTRAP_ROLE | Yes | AP_CLERK, FINANCE_MANAGER, or SYSTEM_ADMIN |
 | APEX_SESSION_MINUTES | No | Session lifetime; default 60 |
-| JWT_ISSUER | No | Optional issuer validation |
+| APEX_ORGANIZATION_ID | No | Workspace/tenant identifier; defaults to `default` |\n| JWT_ISSUER | No | Optional issuer validation |
 | JWT_AUDIENCE | No | Optional audience validation |
 | APEX_PLANNER | Yes | mock or openai |
 | OPENAI_API_KEY | Only for openai | LLM provider credential |
@@ -540,3 +540,16 @@ MIT — see [LICENSE](LICENSE).
   <strong>ApexOperator</strong><br>
   <sub>Reason with AI. Govern with code. Execute with evidence.</sub>
 </p>
+
+
+### Multi-user workspace model
+
+ApexOperator uses a workspace boundary for operational data. Every authenticated production user belongs to an organization/workspace, and every task is stored with that workspace identity.
+
+- **AP Clerk:** can submit and view their own tasks only.
+- **Finance Manager:** can review and operate tasks in their workspace.
+- **System Admin:** can provision users into their workspace through `POST /admin/users`.
+- Users in another workspace cannot read or review tasks from the first workspace.
+- Invoice idempotency is scoped to the workspace, so the same invoice number can exist independently in different organizations.
+
+There is intentionally no public self-signup endpoint: account creation is a controlled administrator operation, avoiding anonymous account creation on the production finance surface.
