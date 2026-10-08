@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -18,8 +18,12 @@ from apexoperator.api.schemas import (
     AuditVerificationResponse,
     CreateTaskRequest,
     TaskResponse,
+    DocumentProcessResponse,
 )
 from apexoperator.persistence.database import init_database, make_engine, make_session_factory
+from apexoperator.documents.extract import ExtractionError, InvoiceDocumentExtractor
+from apexoperator.documents.security import DocumentSecurityError
+from apexoperator.domain.invoice import Invoice
 from apexoperator.persistence.sqlalchemy_audit import SQLAlchemyAuditLedger
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
 from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal, ensure_bootstrap_user
@@ -217,6 +221,52 @@ def create_app(
     def create_task(body: CreateTaskRequest, request: Request) -> TaskResponse:
         return request.app.state.service.create_task(body, principal(request))
 
+    @api.post("/documents/invoices/process", response_model=DocumentProcessResponse)
+    async def process_invoice_document(
+        request: Request,
+        document: UploadFile = File(...),
+        justification: str | None = None,
+    ) -> DocumentProcessResponse:
+        current = principal(request)
+        filename = (document.filename or "").strip()
+        if not filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=415, detail="only PDF invoice documents are supported")
+        if document.content_type not in {None, "", "application/pdf", "application/octet-stream"}:
+            raise HTTPException(status_code=415, detail="unsupported document content type")
+
+        content = await document.read(10 * 1024 * 1024 + 1)
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="document exceeds the 10 MB upload limit")
+        try:
+            extraction = InvoiceDocumentExtractor().extract_pdf(content)
+        except (DocumentSecurityError, ExtractionError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+        task = request.app.state.service.create_task_from_document(
+            Invoice(
+                invoice_id=extraction.invoice_id,
+                vendor_name=extraction.vendor_name,
+                subtotal=extraction.subtotal,
+                tax=extraction.tax,
+                total=extraction.total,
+            ),
+            current,
+            justification=(justification or "").strip() or None,
+            confidence=extraction.confidence_class.value,
+        )
+        return DocumentProcessResponse(
+            task=task,
+            document={
+                "filename": filename,
+                "invoice_id": extraction.invoice_id,
+                "vendor_name": extraction.vendor_name,
+                "subtotal": str(extraction.subtotal),
+                "tax": str(extraction.tax),
+                "total": str(extraction.total),
+                "confidence": str(extraction.confidence),
+                "confidence_class": extraction.confidence_class.value,
+            },
+        )
     @api.get("/tasks/{task_id}", response_model=TaskResponse)
     def get_task(task_id: str, request: Request) -> TaskResponse:
         return request.app.state.service.get_task(task_id)
