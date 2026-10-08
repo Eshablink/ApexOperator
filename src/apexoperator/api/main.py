@@ -194,16 +194,13 @@ def create_app(
         return request.app.state.authenticator.authenticate(token)
 
     @api.get("/auth/config")
-    def auth_config() -> dict[str, Any]:
-        available = ["mock"]
-        if "openai" in request.app.state.service.planners if False else False:
-            pass
+    def auth_config(request: Request) -> dict[str, Any]:
         return {
             "mode": settings.app_env,
             "production": settings.app_env == "production",
             "roles": [role.value for role in Role],
             "session_minutes": settings.session_minutes if settings.app_env == "production" else None,
-            "planner_modes": available,
+            "planner_modes": sorted(request.app.state.service.planners.keys()),
         }
 
     @api.get("/auth/me")
