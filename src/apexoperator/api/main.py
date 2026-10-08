@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -225,7 +225,7 @@ def create_app(
     async def process_invoice_document(
         request: Request,
         document: UploadFile = File(...),
-        justification: str | None = None,
+        justification: str | None = Query(default=None, max_length=4000),
     ) -> DocumentProcessResponse:
         current = principal(request)
         filename = (document.filename or "").strip()
