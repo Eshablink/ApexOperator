@@ -71,3 +71,8 @@ class TaskResponse(BaseModel):
 
 class AuditVerificationResponse(BaseModel):
     integrity_valid: bool
+
+
+class DocumentProcessResponse(BaseModel):
+    task: TaskResponse
+    document: dict
