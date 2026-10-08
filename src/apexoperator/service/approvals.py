@@ -48,6 +48,10 @@ class ApprovalService:
         )
 
     def create_task(self, request: CreateTaskRequest, principal: Principal) -> TaskResponse:
+        existing = self.task_store.get_by_invoice_id(request.invoice_id)
+        if existing is not None:
+            return TaskResponse.model_validate(existing)
+
         task_id = str(uuid4())
         state = self.runtime.run(
             AgentTaskRequest(
