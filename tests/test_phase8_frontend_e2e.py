@@ -38,6 +38,7 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT / "src")
     env["DATABASE_URL"] = f"sqlite:///{tmp_path / 'e2e.sqlite3'}"
+    env["APP_ENV"] = "development"
     env["APEX_PLANNER"] = "mock"
 
     process = subprocess.Popen(
