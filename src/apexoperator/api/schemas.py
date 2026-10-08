@@ -76,3 +76,33 @@ class AuditVerificationResponse(BaseModel):
 class DocumentProcessResponse(BaseModel):
     task: TaskResponse
     document: dict
+
+
+class CreateUserRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str
+    password: str = Field(min_length=12, max_length=256)
+    role: str
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        value = value.strip().lower()
+        if "@" not in value or len(value) > 320:
+            raise ValueError("valid email is required")
+        return value
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        value = value.strip().upper()
+        if value not in {"AP_CLERK", "FINANCE_MANAGER", "SYSTEM_ADMIN"}:
+            raise ValueError("unsupported role")
+        return value
+
+class UserResponse(BaseModel):
+    actor_id: str
+    email: str
+    role: str
+    organization_id: str
+    is_active: bool
