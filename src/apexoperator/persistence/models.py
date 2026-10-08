@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Integer, String, Text
+from sqlalchemy import JSON, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -11,10 +11,11 @@ class Base(DeclarativeBase):
 
 class TaskRecord(Base):
     __tablename__ = "tasks"
+    __table_args__ = (UniqueConstraint("organization_id", "invoice_id", name="uq_tasks_org_invoice"),)
 
     task_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     organization_id: Mapped[str] = mapped_column(String(128), nullable=False, default="default", index=True)
-    invoice_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    invoice_id: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False)
     requested_by: Mapped[str] = mapped_column(String(128), nullable=False)
     decision: Mapped[str] = mapped_column(String(64), nullable=False)
