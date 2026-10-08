@@ -897,7 +897,7 @@ function bindEvents() {
     }
   });
 
-  $(".role-card").forEach(card => {
+  $$(".role-card").forEach(card => {
     card.addEventListener("click", () => {
       if (!state.initialized) {
         state.pendingDemoRole = card;
