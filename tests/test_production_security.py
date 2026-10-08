@@ -120,3 +120,35 @@ def test_health_route_is_available_to_unauthenticated_clients(tmp_path):
 
     head = client.head("/health")
     assert head.status_code == 200
+
+
+def test_production_create_app_initializes_database_before_bootstrap(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    from apexoperator.api.main import create_app
+    from apexoperator.config import settings
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "incoming_batch.json").write_text(
+        json.dumps({"invoices": []}),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(settings, "jwt_secret", "x" * 48)
+    monkeypatch.setattr(settings, "bootstrap_email", "owner@example.com")
+    monkeypatch.setattr(
+        settings,
+        "bootstrap_password_hash",
+        "scrypt$v1$16384$8$1$c2FsdA==$ZGlnZXN0",
+    )
+    monkeypatch.setattr(settings, "bootstrap_role", Role.FINANCE_MANAGER.value)
+
+    client = TestClient(
+        create_app(
+            workspace_dir=workspace,
+            database_path=tmp_path / "app.sqlite3",
+        )
+    )
+
+    assert client.get("/health").status_code == 200

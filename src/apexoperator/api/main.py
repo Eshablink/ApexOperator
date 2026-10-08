@@ -35,6 +35,11 @@ def create_app(
     authenticator: InMemoryAuthenticator | JWTAuthenticator | None = None,
     planner = None,
 ) -> FastAPI:
+    resolved_url = database_url or (settings.database_url if database_path is None else f"sqlite:///{Path(database_path).resolve()}")
+    engine = make_engine(resolved_url)
+    init_database(engine)
+    sessions = make_session_factory(engine)
+
     if authenticator is None:
         if settings.app_env == "production":
             if not settings.jwt_secret or not settings.bootstrap_email or not settings.bootstrap_password_hash:
@@ -61,12 +66,6 @@ def create_app(
                     "dev-admin-token": Principal("dev-admin", Role.SYSTEM_ADMIN),
                 }
             )
-
-    resolved_url = database_url or (settings.database_url if database_path is None else f"sqlite:///{Path(database_path).resolve()}")
-    engine = make_engine(resolved_url)
-    init_database(engine)
-    sessions = make_session_factory(engine)
-
     task_store = SQLAlchemyTaskStore(sessions)
     audit_ledger = SQLAlchemyAuditLedger(sessions)
 
