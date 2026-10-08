@@ -1,5 +1,7 @@
 import json
 
+import pymupdf
+
 from fastapi.testclient import TestClient
 
 from apexoperator.api.main import create_app
@@ -45,6 +47,27 @@ def make_client(tmp_path):
         authenticator=auth,
     )
     return TestClient(app)
+
+
+
+def invoice_pdf(*, invoice_id="OWN-001", vendor="My Vendor", subtotal="4000.00", tax="400.00", total="4400.00"):
+    document = pymupdf.open()
+    page = document.new_page()
+    page.insert_text(
+        (72, 72),
+        "\n".join(
+            [
+                f"Invoice ID: {invoice_id}",
+                f"Vendor: {vendor}",
+                f"Subtotal: {subtotal}",
+                f"Tax: {tax}",
+                f"Total: {total}",
+            ]
+        ),
+    )
+    content = document.tobytes()
+    document.close()
+    return content
 
 
 def auth(token):
@@ -216,3 +239,55 @@ def test_ready_and_secured_dashboard(tmp_path):
     assert "Pending approval" in allowed.text
 
 
+
+
+def test_uploaded_invoice_pdf_is_extracted_and_governed(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/documents/invoices/process",
+        files={"document": ("my-invoice.pdf", invoice_pdf(), "application/pdf")},
+        data={"justification": "Process my own invoice"},
+        headers=auth("clerk-token"),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["document"]["invoice_id"] == "OWN-001"
+    assert body["document"]["vendor_name"] == "My Vendor"
+    assert body["document"]["total"] == "4400.00"
+    assert body["task"]["status"] == "AUTO_APPROVED"
+    assert body["task"]["invoice_id"] == "OWN-001"
+
+
+def test_uploaded_invoice_pdf_above_threshold_requires_human(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/documents/invoices/process",
+        files={"document": ("high.pdf", invoice_pdf(subtotal="6000.00", tax="600.00", total="6600.00"), "application/pdf")},
+        headers=auth("clerk-token"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["task"]["status"] == "PENDING_HUMAN_APPROVAL"
+
+
+def test_uploaded_invoice_math_mismatch_is_rejected_by_policy(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/documents/invoices/process",
+        files={"document": ("bad.pdf", invoice_pdf(subtotal="6000.00", tax="600.00", total="7000.00"), "application/pdf")},
+        headers=auth("clerk-token"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["task"]["status"] == "REJECTED"
+
+
+def test_uploaded_document_requires_pdf(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/documents/invoices/process",
+        files={"document": ("invoice.txt", b"not a pdf", "text/plain")},
+        headers=auth("clerk-token"),
+    )
+    assert response.status_code == 415

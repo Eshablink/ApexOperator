@@ -386,6 +386,58 @@ async function processInvoice() {
   }
 }
 
+async function processDocument() {
+  const input = $("documentInput");
+  const file = input?.files?.[0];
+  if (!file) {
+    toast("Choose a PDF invoice first.", "error");
+    return;
+  }
+  const button = $("processDocumentBtn");
+  const result = $("documentResult");
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = 'Extracting &amp; governing<span class="spinner"></span>';
+  }
+  result?.classList.add("hidden");
+  try {
+    const form = new FormData();
+    form.append("document", file, file.name);
+    form.append("justification", $("documentJustification")?.value.trim() || "");
+    const response = await api("/documents/invoices/process", {
+      method: "POST",
+      body: form,
+      timeoutMs: 35000,
+    });
+    const doc = response.document || {};
+    const task = response.task || {};
+    if (result) {
+      result.classList.remove("hidden", "error");
+      result.innerHTML = "";
+      const title = document.createElement("strong");
+      title.textContent = `${doc.invoice_id || file.name} · ${statusLabel(task.status)}`;
+      const details = document.createElement("span");
+      details.textContent = `${doc.vendor_name || "Unknown vendor"} · Total ${doc.total || "—"} · Extraction ${doc.confidence_class || "—"}`;
+      result.append(title, details);
+    }
+    toast(`${doc.invoice_id || file.name}: ${statusLabel(task.status)}`, "success");
+    input.value = "";
+    $("documentJustification").value = "";
+    await loadLive();
+  } catch (error) {
+    if (result) {
+      result.classList.remove("hidden");
+      result.classList.add("error");
+      result.textContent = error.message;
+    }
+    toast(error.message, "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = 'Upload &amp; process document <span>→</span>';
+    }
+  }
+}
 async function reviewTask(taskId, approve) {
   try {
     const task = await api(`/tasks/${encodeURIComponent(taskId)}/${approve ? "approve" : "reject"}`, {
@@ -485,6 +537,7 @@ $("#closeConsole")?.addEventListener("click", closeConsole);
 $("#closeAuth")?.addEventListener("click", closeAuth);
 $("#verifyBtn")?.addEventListener("click", verifyAudit);
 $("#processBtn")?.addEventListener("click", processInvoice);
+$("#processDocumentBtn")?.addEventListener("click", processDocument);
 $("#refreshBtn")?.addEventListener("click", loadLive);
 $("#retryBtn")?.addEventListener("click", loadLive);
 $("#taskFilter")?.addEventListener("input", renderTasks);

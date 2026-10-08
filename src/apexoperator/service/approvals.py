@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 
 from apexoperator.agent.runtime import AgentRuntime, AgentTaskRequest, Planner
 from apexoperator.api.schemas import ApprovalRequest, CreateTaskRequest, TaskResponse, TaskStatus
+from apexoperator.domain.invoice import Invoice
+from apexoperator.policy.engine import DeterministicPolicyEngine
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
 from apexoperator.security.auth import Principal
 from apexoperator.security.rbac import Permission, RBAC
@@ -116,6 +118,60 @@ class ApprovalService:
                 raise
             return TaskResponse.model_validate(existing)
 
+        row = self.task_store.get(task_id)
+        return TaskResponse.model_validate(row)
+
+    def create_task_from_document(
+        self,
+        invoice: Invoice,
+        principal: Principal,
+        *,
+        justification: str | None = None,
+        confidence: str = "HIGH",
+    ) -> TaskResponse:
+        existing = self.task_store.get_by_invoice_id(invoice.invoice_id)
+        if existing is not None:
+            return TaskResponse.model_validate(existing)
+
+        decision = DeterministicPolicyEngine.evaluate_invoice(invoice)
+        status = {
+            "AUTO_APPROVED": TaskStatus.AUTO_APPROVED,
+            "REJECTED": TaskStatus.REJECTED,
+            "HUMAN_ESCALATION_REQUIRED": TaskStatus.PENDING_HUMAN_APPROVAL,
+        }[decision.value]
+        task_id = str(uuid4())
+
+        try:
+            self.task_store.create(
+                task_id,
+                invoice.invoice_id,
+                status.value,
+                principal.actor_id,
+                decision.value,
+                justification,
+            )
+        except IntegrityError:
+            existing = self.task_store.get_by_invoice_id(invoice.invoice_id)
+            if existing is None:
+                raise
+            return TaskResponse.model_validate(existing)
+
+        self.audit_ledger.append_event(
+            str(uuid4()),
+            "DOCUMENT_PROCESSED",
+            "document.processed",
+            {
+                "task_id": task_id,
+                "invoice_id": invoice.invoice_id,
+                "vendor_name": invoice.vendor_name,
+                "subtotal": str(invoice.subtotal),
+                "tax": str(invoice.tax),
+                "total": str(invoice.total),
+                "confidence": confidence,
+                "decision": decision.value,
+                "actor": principal.actor_id,
+            },
+        )
         row = self.task_store.get(task_id)
         return TaskResponse.model_validate(row)
 

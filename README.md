@@ -79,7 +79,7 @@ ApexOperator focuses on the next problem:
 | Financial policy | Decimal-safe calculations + deterministic thresholds |
 | Human oversight | Persisted approve/reject workflow |
 | Browser automation | Playwright adapter + selector fallbacks + post-action verification |
-| Document intelligence | PyMuPDF extraction + confidence boundary + OCR interface |
+| Document intelligence | User-uploaded invoice PDFs + PyMuPDF extraction + confidence boundary + OCR interface |
 | Persistence | SQLAlchemy with SQLite locally and PostgreSQL for deployment |
 | Auditability | SHA-256 chained audit ledger |
 | Observability | Structured JSON HTTP logging + readiness checks |
@@ -169,6 +169,8 @@ The project includes a recruiter-facing product experience rather than only an A
 
 ### Operations control room
 
+- authenticated self-service invoice PDF upload;
+- extracted invoice preview with confidence;
 - live task KPIs;
 - filterable persisted operations;
 - approve/reject actions;
@@ -349,7 +351,8 @@ Useful endpoints:
 | GET /ready | Readiness + persistence/audit checks |
 | GET /dashboard | Control-room application |
 | GET /dashboard/data | Live dashboard data |
-| POST /tasks | Start governed invoice workflow |
+| POST /tasks | Start governed invoice workflow from a known invoice ID |
+| POST /documents/invoices/process | Upload and govern a PDF invoice from the current user |
 | GET /tasks/{task_id} | Inspect persisted task |
 | POST /tasks/{task_id}/approve | Human approval |
 | POST /tasks/{task_id}/reject | Human rejection |
@@ -358,6 +361,22 @@ Useful endpoints:
 | POST /auth/logout | Production logout |
 
 ---
+
+## 📄 Bring your own invoice
+
+The live control room supports a real user workflow, not only the seeded demo invoices.
+
+1. Open the control room and sign in.
+2. Choose **Process your own invoice**.
+3. Upload a PDF invoice up to 10 MB.
+4. ApexOperator validates the PDF signature and extracts invoice ID, vendor, subtotal, tax and total.
+5. The deterministic policy evaluates the uploaded values:
+   - mathematically consistent and ≤ ₹5,000 → AUTO_APPROVED
+   - mathematically consistent and > ₹5,000 → PENDING_HUMAN_APPROVAL
+   - total mismatch → REJECTED
+6. The task and audit evidence are persisted; the uploaded file itself is processed in memory and is not stored.
+
+**Supported input:** PDF invoices with text fields in the form `Invoice ID:`, `Vendor:`, `Subtotal:`, `Tax:`, and `Total:`. Scanned/image-only PDFs require an OCR provider to be configured.
 
 ## ⚙️ Configuration
 

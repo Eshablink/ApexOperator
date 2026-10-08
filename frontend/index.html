@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#2e145f">
   <meta name="description" content="ApexOperator — governed AI for high-consequence business operations.">
   <title>ApexOperator — AI Operations Control Room</title>
-  <link rel="stylesheet" href="/assets/styles.css?v=2026.10.08">
-  <link rel="stylesheet" href="/assets/2026-polish.css?v=2026.10.08">
-  <link rel="stylesheet" href="/assets/2026-editions.css?v=2026.10.08">
+  <link rel="stylesheet" href="/assets/styles.css?v=2026.10.08.2">
+  <link rel="stylesheet" href="/assets/2026-polish.css?v=2026.10.08.2">
+  <link rel="stylesheet" href="/assets/2026-editions.css?v=2026.10.08.2">
 </head>
 <body>
   <div class="noise"></div>
@@ -256,7 +256,19 @@
                 <label>Invoice ID<input id="invoiceInput" value="INV-LOW-001" autocomplete="off"></label>
                 <label>Justification<textarea id="justificationInput" placeholder="Why should this be processed?"></textarea></label>
                 <button class="primary-btn full" id="processBtn">Run governed workflow <span>→</span></button>
-                <small class="demo-note">Local demo data only · no real money movement</small>
+                <small class="demo-note">Demo invoice IDs use the seeded workspace. For your own invoice, upload a PDF below.</small>
+              </section>
+              <section class="action-panel document-upload-panel">
+                <div class="eyebrow">DOCUMENT INGESTION</div>
+                <h3>Process your own invoice</h3>
+                <p>Upload a PDF invoice. ApexOperator extracts the fields, applies the deterministic policy, and persists the resulting workflow.</p>
+                <label>Invoice PDF
+                  <input id="documentInput" type="file" accept=".pdf,application/pdf">
+                </label>
+                <label>Justification<textarea id="documentJustification" placeholder="Optional reason for processing this document"></textarea></label>
+                <button class="primary-btn full" id="processDocumentBtn">Upload &amp; process document <span>→</span></button>
+                <div id="documentResult" class="document-result hidden" role="status" aria-live="polite"></div>
+                <small class="demo-note">PDF only · maximum 10 MB · document contents are processed in memory and are not stored as files.</small>
               </section>
               <section class="integrity-panel" id="integrityPanel">
                 <div class="integrity-head"><span class="shield">✓</span><div><span>AUDIT INTEGRITY</span><strong id="auditStatus">Checking…</strong></div></div>
@@ -325,7 +337,7 @@
   </div>
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
-  <script src="/assets/app.js?v=2026.10.08"></script>
-  <script src="/assets/2026-interactions.js?v=2026.10.08"></script>
+  <script src="/assets/app.js?v=2026.10.08.2"></script>
+  <script src="/assets/2026-interactions.js?v=2026.10.08.2"></script>
 </body>
 </html>
