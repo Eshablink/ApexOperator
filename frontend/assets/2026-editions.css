@@ -982,3 +982,12 @@ body::after{display:none}
 @media(prefers-reduced-motion:reduce){
   .skeleton-row td span{animation:none}
 }
+
+
+/* Self-service document ingestion */
+.document-upload-panel input[type="file"] { padding: 11px; border: 1px dashed rgba(100,116,139,.35); background: rgba(248,250,252,.8); }
+.document-upload-panel input[type="file"]::file-selector-button { margin-right: 10px; border: 0; border-radius: 9px; padding: 8px 11px; font-weight: 700; cursor: pointer; }
+.document-result { display: grid; gap: 4px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.18); }
+.document-result strong { font-size: 13px; }
+.document-result span { color: var(--muted, #64748b); font-size: 12px; line-height: 1.45; }
+.document-result.error { background: rgba(239,68,68,.07); border-color: rgba(239,68,68,.18); color: #b42318; }
