@@ -937,9 +937,37 @@ body::after{display:none}
   .app-content{padding:14px}
   .panel-toolbar{padding:14px}
   .operation-table-wrap{display:none}
+  .operations-mobile{display:grid}
   .operations-panel{overflow:visible}
-  .operations-panel::after{
-    content:"Operations will appear here as compact cards on mobile.";
+  .operation-card{
+    margin:0 14px 10px;
+    padding:14px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:14px;
+    background:rgba(255,255,255,.018);
+  }
+  .operation-card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .operation-card-top strong{display:block;font-size:11px;color:#eef2f8}
+  .operation-card-top small{display:block;margin-top:4px;color:#5e6a80;font-size:8px}
+  .operation-card-meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:13px;
+    padding-top:11px;
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+  .operation-card-meta span{font-size:8px;color:#667389;line-height:1.4}
+  .operation-card-meta b{display:block;margin-top:3px;color:#c7cfdd;font-weight:700}
+  .operation-card-actions{display:flex;gap:7px;margin-top:12px}
+  .operation-card-actions .table-action{flex:1}
+  .operations-mobile:empty::after{
+    content:"No operations match this filter.";
     display:block;
     margin:0 14px 14px;
     padding:18px;
@@ -947,7 +975,6 @@ body::after{display:none}
     border-radius:14px;
     color:#657287;
     font-size:10px;
-    line-height:1.5;
     text-align:center;
   }
   .ed-sample-badge{margin-left:14px;margin-right:14px}
