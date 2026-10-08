@@ -3,12 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#2e145f">
   <meta name="description" content="ApexOperator — governed AI for high-consequence business operations.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#2e145f">
+  <link rel="canonical" href="https://apexoperator.onrender.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ApexOperator">
+  <meta property="og:title" content="ApexOperator — AI that reasons. Software that governs.">
+  <meta property="og:description" content="A governed agent runtime for sensitive business operations.">
+  <meta property="og:url" content="https://apexoperator.onrender.com/">
+  <meta property="og:image" content="https://apexoperator.onrender.com/assets/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ApexOperator — AI that reasons. Software that governs.">
+  <meta name="twitter:description" content="Governed AI for high-consequence business operations.">
+  <meta name="twitter:image" content="https://apexoperator.onrender.com/assets/og-image.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <title>ApexOperator — AI Operations Control Room</title>
   <link rel="stylesheet" href="/assets/styles.css">
   <link rel="stylesheet" href="/assets/2026-polish.css">
   <link rel="stylesheet" href="/assets/2026-editions.css">
+  <link rel="stylesheet" href="/assets/ops-hardening.css">
 </head>
 <body>
   <div class="noise"></div>
@@ -25,7 +41,7 @@
       <a href="#system">System</a>
       <a href="#controls">Controls</a>
       <a href="#console">Console</a>
-      <div class="header-actions"><span class="session-badge" id="sessionBadge"><b></b> DEMO MODE</span><button class="nav-cta" id="launchTop">Launch console <span>↗</span></button></div>
+      <div class="header-actions"><span class="session-badge" id="sessionBadge"><b></b> DEMO MODE</span></div>
     </nav>
   </header>
 
@@ -51,6 +67,7 @@
         </div>
 
         <div class="ed-hero-art" aria-label="ApexOperator governed execution visualization">
+          <span class="sample-badge">SAMPLE DATA</span>
           <div class="ed-orb ed-orb-a"></div>
           <div class="ed-orb ed-orb-b"></div>
           <div class="ed-hero-word">CONTROL</div>
@@ -81,7 +98,7 @@
     </section>
 
     <section class="ed-marquee" aria-label="Workflow principles">
-      <div class="ed-marquee-track">
+      <div class="ed-marquee-track" aria-hidden="true">
         <span>UNDERSTAND</span><b>✦</b><span>PLAN</span><b>✦</b><span>POLICY</span><b>✦</b><span>HUMAN</span><b>✦</b><span>EXECUTE</span><b>✦</b><span>VERIFY</span><b>✦</b>
         <span>UNDERSTAND</span><b>✦</b><span>PLAN</span><b>✦</b><span>POLICY</span><b>✦</b><span>HUMAN</span><b>✦</b><span>EXECUTE</span><b>✦</b><span>VERIFY</span><b>✦</b>
       </div>
@@ -156,13 +173,13 @@
 
       <div class="ed-control-grid">
         <article class="ed-control-card ed-control-a">
-          <div class="ed-control-top"><span>A</span><b>00 → 05K</b></div>
+          <div class="ed-control-top"><span>A</span><b>Up to ₹5,000</b></div>
           <h3>AUTO<br>APPROVE</h3>
           <p>Consistent invoices at or below threshold move without unnecessary friction.</p>
           <div class="ed-control-foot"><span>CONSISTENT</span><strong>₹5,000</strong></div>
         </article>
         <article class="ed-control-card ed-control-b">
-          <div class="ed-control-top"><span>B</span><b>05K → ∞</b></div>
+          <div class="ed-control-top"><span>B</span><b>Above ₹5,000</b></div>
           <h3>HUMAN<br>APPROVAL</h3>
           <p>Higher-value work becomes a persisted approval state tied to the exact task.</p>
           <div class="ed-control-foot"><span>REVIEW REQUIRED</span><strong>&gt; ₹5,000</strong></div>
@@ -179,9 +196,8 @@
     <section class="ed-console-section section-shell console-preview" id="console">
       <div class="ed-console-head">
         <div><p class="ed-kicker">OPERATIONS CONTROL ROOM</p><h2>Serious controls.<br><em>Zero dashboard boredom.</em></h2></div>
-        <button class="primary-btn small ed-primary" id="launchConsole">Launch live console <span>→</span></button>
       </div>
-      <div class="ed-console-frame">
+      <div class="ed-console-frame"><span class="sample-badge">SAMPLE DATA</span>
         <div class="ed-console-bar"><span>APEXOPERATOR / CONTROL ROOM</span><b><i></i> API READY</b><b><i></i> AUDIT VALID</b></div>
         <div class="ed-console-stats">
           <div><span>PENDING</span><strong>03</strong><small>needs attention</small></div>
@@ -198,6 +214,36 @@
       </div>
     </section>
   </main>
+
+
+  <div class="wake-notice" id="wakeNotice" role="status" aria-live="polite">
+    <div class="wake-notice-row">
+      <span class="wake-dot" aria-hidden="true"></span>
+      <div class="wake-notice-copy"><strong id="wakeTitle">Waking up the server</strong><span id="wakeMessage">The hosted demo may take around 30–60 seconds to wake.</span></div>
+      <button class="wake-retry" id="retryServer" hidden>Retry</button>
+    </div>
+  </div>
+
+  <div class="task-detail-modal" id="taskDetailModal" aria-hidden="true">
+    <div class="task-detail-card" role="dialog" aria-modal="true" aria-labelledby="taskDetailTitle">
+      <div class="task-detail-head">
+        <div><div class="eyebrow">OPERATION DETAIL</div><h2 id="taskDetailTitle">Loading operation…</h2><p id="taskDetailSubtitle">Fetching persisted evidence and audit timeline.</p></div>
+        <button class="task-detail-close" id="closeTaskDetail" aria-label="Close operation detail">×</button>
+      </div>
+      <div class="task-detail-body" id="taskDetailBody"></div>
+    </div>
+  </div>
+
+
+  <footer class="site-footer">
+    <div><strong>ApexOperator</strong><span>Governed AI for high-consequence operations.</span></div>
+    <nav aria-label="Footer">
+      <a href="https://github.com/Eshablink/ApexOperator" target="_blank" rel="noreferrer">GitHub ↗</a>
+      <a href="https://github.com/Eshablink/ApexOperator/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noreferrer">Architecture ↗</a>
+      <a href="https://github.com/Eshablink/ApexOperator/blob/main/docs/SECURITY.md" target="_blank" rel="noreferrer">Security ↗</a>
+      <a href="https://www.linkedin.com/in/esha-dabbara-708177255/" target="_blank" rel="noreferrer">Contact ↗</a>
+    </nav>
+  </footer>
 
   <div class="console-overlay" id="consoleOverlay" aria-hidden="true">
     <div class="console-app">
@@ -235,7 +281,7 @@
             <section class="operations-panel">
               <div class="panel-toolbar">
                 <div><h3>Recent operations</h3><p id="recordHint">Loading persisted tasks…</p></div>
-                <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Filter invoice or task…" aria-label="Filter operations"><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
+                <div class="toolbar-tools"><input id="taskFilter" type="search" placeholder="Search operations…" aria-label="Search operations"><select id="statusFilter" aria-label="Filter by status"><option value="">All statuses</option><option value="PENDING_HUMAN_APPROVAL">Pending</option><option value="AUTO_APPROVED">Auto approved</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></select><button class="icon-btn" id="refreshBtn" title="Refresh">↻</button></div>
               </div>
               <div class="operation-table-wrap">
                 <table class="operation-table">
@@ -250,6 +296,14 @@
                 <div class="eyebrow">QUICK ACTION</div>
                 <h3>Process an invoice</h3>
                 <p>Run the governed workflow against the committed demo workspace.</p>
+                <div class="planner-picker">
+                  <label for="plannerMode">Planner mode</label>
+                  <select id="plannerMode" aria-label="Planner mode">
+                    <option value="mock">Mock · deterministic</option>
+                    <option value="openai">Live LLM · untrusted</option>
+                  </select>
+                </div>
+                <small class="planner-hint" id="plannerHint">Mock planner is deterministic and always available.</small>
                 <label>Invoice ID<input id="invoiceInput" value="INV-LOW-001" autocomplete="off"></label>
                 <label>Justification<textarea id="justificationInput" placeholder="Why should this be processed?"></textarea></label>
                 <button class="primary-btn full" id="processBtn">Run governed workflow <span>→</span></button>
@@ -259,6 +313,12 @@
                 <div class="integrity-head"><span class="shield">✓</span><div><span>AUDIT INTEGRITY</span><strong id="auditStatus">Checking…</strong></div></div>
                 <div class="integrity-bar"><i></i></div>
                 <p>SHA-256 chained events make unauthorized payload, ordering or deletion changes detectable.</p>
+                <div class="console-toolbar-actions">
+                  <button class="compact-action" id="tamperBtn">Simulate tampering</button>
+                  <button class="compact-action" id="exportJsonBtn">Export JSON</button>
+                  <button class="compact-action" id="exportCsvBtn">Export CSV</button>
+                  <button class="compact-action" id="resetDemoBtn">Reset demo data</button>
+                </div>
               </section>
             </aside>
           </div>
@@ -274,7 +334,7 @@
         <div class="auth-logo"><span class="brand-mark"><span></span><span></span><span></span></span></div>
         <span class="security-chip"><b></b> Protected workspace</span>
       </div>
-      <div class="eyebrow" id="authKicker">RECRUITER DEMO ACCESS</div>
+      <div class="eyebrow" id="authKicker">DEMO WORKSPACE ACCESS</div>
       <h2 id="authTitle">Open the control room.</h2>
       <p id="authLede">Use a deterministic demo role to explore the governed workflow without external credentials.</p>
 
@@ -298,9 +358,9 @@
 
       <div id="demoAuth">
         <div class="role-grid">
-          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Finance Manager</b><span>Review · approve · audit</span><i>Recommended for demo</i></button>
-          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>AP Clerk</b><span>Read · validate · submit</span><i>Operations role</i></button>
-          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>System Admin</b><span>All governed permissions</span><i>Admin role</i></button>
+          <button class="role-card" data-token="dev-manager-token" data-role="FINANCE_MANAGER" data-actor="dev-manager"><b>Sign in as Finance Manager</b><span>Review · approve · audit</span><i>One-click demo access</i></button>
+          <button class="role-card" data-token="dev-clerk-token" data-role="AP_CLERK" data-actor="dev-clerk"><b>Sign in as AP Clerk</b><span>Read · validate · submit</span><i>One-click demo access</i></button>
+          <button class="role-card" data-token="dev-admin-token" data-role="SYSTEM_ADMIN" data-actor="dev-admin"><b>Sign in as System Admin</b><span>All governed permissions</span><i>Admin-only demo controls</i></button>
         </div>
       </div>
 

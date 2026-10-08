@@ -119,7 +119,7 @@ def test_clerk_cannot_approve(tmp_path):
 
     response = client.post(
         f"/tasks/{task['task_id']}/approve",
-        json={},
+        json={"comment": "Clerk review is not authorized."},
         headers=auth("clerk-token"),
     )
     assert response.status_code == 403
@@ -136,12 +136,12 @@ def test_approval_must_target_existing_pending_escalation(tmp_path):
 
     first = client.post(
         f"/tasks/{task['task_id']}/approve",
-        json={},
+        json={"comment": "Verified against the source invoice."},
         headers=auth("manager-token"),
     )
     second = client.post(
         f"/tasks/{task['task_id']}/approve",
-        json={},
+        json={"comment": "Duplicate decision should be blocked."},
         headers=auth("manager-token"),
     )
     assert first.status_code == 200
@@ -199,3 +199,19 @@ def test_ready_and_secured_dashboard(tmp_path):
     assert "Pending approval" in allowed.text
 
 
+
+
+def test_approval_requires_reason(tmp_path):
+    client = make_client(tmp_path)
+    task = client.post(
+        "/tasks",
+        json={"invoice_id": "INV-HIGH-001"},
+        headers=auth("clerk-token"),
+    ).json()
+
+    response = client.post(
+        f"/tasks/{task['task_id']}/approve",
+        json={},
+        headers=auth("manager-token"),
+    )
+    assert response.status_code == 422

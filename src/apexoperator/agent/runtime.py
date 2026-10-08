@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -19,6 +21,7 @@ class AgentTaskState(BaseModel):
     steps: int = 0
     retries: int = 0
     history: list[ToolResult] = Field(default_factory=list)
+    planner_proposals: list[PlannedToolCall] = Field(default_factory=list)
 
 
 class PlannedToolCall(BaseModel):
@@ -192,6 +195,19 @@ class AgentRuntime:
                         f"disallowed_plan:{pending_call.tool_name}",
                         context,
                     )
+
+                state.planner_proposals.append(pending_call)
+                context.audit_ledger.append_event(
+                    f"planner:{state.task_id}:{len(state.planner_proposals)}",
+                    "PLANNER_PROPOSAL",
+                    "planner_proposed",
+                    {
+                        "task_id": state.task_id,
+                        "step": len(state.planner_proposals),
+                        "tool_name": pending_call.tool_name,
+                        "input_data": pending_call.input_data,
+                    },
+                )
 
             result = self.registry.execute_tool(
                 pending_call.tool_name,

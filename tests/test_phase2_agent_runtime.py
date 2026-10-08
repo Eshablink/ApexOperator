@@ -118,7 +118,8 @@ def test_runtime_is_bounded_and_processes_invoice(tmp_path):
     assert state.steps == 3
     assert all(result.success for result in state.history)
     assert context.audit_ledger.verify_integrity() is True
-    assert len(context.audit_ledger.chain) == 3
+    # Each tool execution is now paired with its validated planner proposal.
+    assert len(context.audit_ledger.chain) == 6
 
 
 class AlwaysFailPlanner:

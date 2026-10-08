@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import sessionmaker
 
 from apexoperator.persistence.models import TaskRecord
@@ -38,12 +38,53 @@ class SQLAlchemyTaskStore:
                 return None
             return self._dict(row)
 
-    def list_recent(self, limit: int = 50) -> list[dict[str, Any]]:
+    def list_recent(
+        self,
+        limit: int = 50,
+        *,
+        offset: int = 0,
+        status: str | None = None,
+        query: str | None = None,
+    ) -> list[dict[str, Any]]:
         with self.session_factory() as session:
-            rows = session.scalars(
-                select(TaskRecord).order_by(TaskRecord.created_at.desc()).limit(limit)
-            ).all()
+            statement = select(TaskRecord).order_by(TaskRecord.created_at.desc())
+            if status:
+                statement = statement.where(TaskRecord.status == status)
+            if query:
+                term = f"%{query.strip().lower()}%"
+                statement = statement.where(
+                    or_(
+                        func.lower(TaskRecord.task_id).like(term),
+                        func.lower(TaskRecord.invoice_id).like(term),
+                        func.lower(TaskRecord.status).like(term),
+                        func.lower(TaskRecord.requested_by).like(term),
+                        func.lower(TaskRecord.reviewer).like(term),
+                    )
+                )
+            rows = session.scalars(statement.offset(max(0, offset)).limit(max(1, min(limit, 100)))).all()
             return [self._dict(row) for row in rows]
+
+    def count(self, *, status: str | None = None, query: str | None = None) -> int:
+        with self.session_factory() as session:
+            statement = select(func.count()).select_from(TaskRecord)
+            if status:
+                statement = statement.where(TaskRecord.status == status)
+            if query:
+                term = f"%{query.strip().lower()}%"
+                statement = statement.where(
+                    or_(
+                        func.lower(TaskRecord.task_id).like(term),
+                        func.lower(TaskRecord.invoice_id).like(term),
+                        func.lower(TaskRecord.status).like(term),
+                        func.lower(TaskRecord.requested_by).like(term),
+                        func.lower(TaskRecord.reviewer).like(term),
+                    )
+                )
+            return int(session.scalar(statement) or 0)
+
+    def delete_all(self) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(delete(TaskRecord))
 
     def transition_review(
         self,

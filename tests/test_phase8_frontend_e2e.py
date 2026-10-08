@@ -38,6 +38,7 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT / "src")
     env["DATABASE_URL"] = f"sqlite:///{tmp_path / 'e2e.sqlite3'}"
+    env["APP_ENV"] = "development"
     env["APEX_PLANNER"] = "mock"
 
     process = subprocess.Popen(
@@ -83,19 +84,43 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 900})
+            page_errors = []
+            console_errors = []
+            page.on("pageerror", lambda error: page_errors.append(str(error)))
+            page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
             page.goto(base + "/", wait_until="networkidle")
 
             expect(page.get_by_text("AI that")).to_be_visible()
             page.get_by_role("button", name="Open live control room").first.click()
             expect(page.get_by_text("Open the control room.")).to_be_visible()
 
-            page.get_by_role("button", name="Finance Manager").click()
-            expect(page.locator("#apiPill")).to_contain_text("API READY")
+            page.get_by_role("button", name="Sign in as Finance Manager").click()
+            try:
+                expect(page.locator("#apiPill")).to_contain_text("API READY", timeout=15000)
+            except AssertionError:
+                probe = page.request.get(
+                    base + "/dashboard/data",
+                    headers={"Authorization": "Bearer dev-manager-token"},
+                )
+                raise AssertionError(
+                    f"frontend errors={page_errors!r}; console_errors={console_errors!r}; "
+                    f"probe_status={probe.status}; probe_body={probe.text()[:500]!r}; "
+                    f"record_hint={page.locator('#recordHint').inner_text()!r}; "
+                    f"wake_message={page.locator('#wakeMessage').inner_text()!r}"
+                )
 
             expect(page.locator("#operationsBody")).to_contain_text("INV-HIGH-001")
             expect(page.locator(".mini-tag.pending").first).to_contain_text("PENDING HUMAN APPROVAL")
 
-            page.get_by_role("button", name="Approve").first.click()
+            page.get_by_role("button", name="Open INV-HIGH-001 operation detail").click()
+            expect(page.locator("#taskDetailTitle")).to_have_text("INV-HIGH-001")
+            expect(page.locator("#taskDetailBody")).to_contain_text("MODEL OUTPUT · UNTRUSTED")
+            expect(page.locator("#taskDetailBody")).to_contain_text("APPLICATION POLICY")
+
+            expect(page.locator("#reviewReason")).to_be_visible()
+            # Approval requires an explicit reason and uses the idempotent transition.
+            page.get_by_label("Decision reason · required").fill("Verified invoice against source and policy.")
+            page.get_by_role("button", name="Approve").click()
             expect(page.locator(".toast.success", has_text="APPROVED")).to_be_visible()
             expect(page.locator("#operationsBody")).to_contain_text("APPROVED")
 

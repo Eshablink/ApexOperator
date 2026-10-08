@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -119,6 +119,63 @@ class SQLAlchemyAuditLedger:
                 return event_hash
         except IntegrityError as exc:
             raise ValueError(f"duplicate or conflicting audit event: {event_id}") from exc
+
+    def list_events(self, *, task_id: str | None = None, limit: int = 500) -> list[dict[str, Any]]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AuditEventRecord)
+                .order_by(AuditEventRecord.sequence_id.asc())
+                .limit(max(1, min(limit, 2000)))
+            ).all()
+            events = [
+                {
+                    "sequence_id": row.sequence_id,
+                    "event_id": row.event_id,
+                    "timestamp": row.timestamp,
+                    "event_type": row.event_type,
+                    "action": row.action,
+                    "after_state": row.after_state or {},
+                    "previous_hash": row.previous_hash,
+                    "event_hash": row.event_hash,
+                }
+                for row in rows
+            ]
+            if task_id is None:
+                return events
+            return [
+                event
+                for event in events
+                if isinstance(event["after_state"], dict)
+                and event["after_state"].get("task_id") == task_id
+            ]
+
+    def simulate_tampering(self) -> bool:
+        with self.session_factory.begin() as session:
+            row = session.scalars(
+                select(AuditEventRecord).order_by(AuditEventRecord.sequence_id.asc()).limit(1)
+            ).first()
+            if row is None:
+                return False
+            payload = dict(row.after_state or {})
+            payload["demo_tampered"] = True
+            session.execute(
+                update(AuditEventRecord)
+                .where(AuditEventRecord.sequence_id == row.sequence_id)
+                .values(after_state=payload)
+            )
+            return True
+
+    def reset_for_demo(self) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(delete(AuditEventRecord))
+            meta = session.get(AuditLedgerMeta, 1)
+            if meta is None:
+                session.add(
+                    AuditLedgerMeta(singleton=1, head_sequence_id=-1, head_event_hash=GENESIS_HASH)
+                )
+            else:
+                meta.head_sequence_id = -1
+                meta.head_event_hash = GENESIS_HASH
 
     def verify_integrity(self) -> bool:
         with self.session_factory() as session:

@@ -1,7 +1,9 @@
+import csv
 import hmac
+import io
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
@@ -14,15 +16,18 @@ from apexoperator.observability.logging import configure_logging, log_request
 
 from apexoperator.api.schemas import (
     ApprovalRequest,
-    LoginRequest,
     AuditVerificationResponse,
     CreateTaskRequest,
+    LoginRequest,
+    TaskDetailResponse,
     TaskResponse,
 )
 from apexoperator.persistence.database import init_database, make_engine, make_session_factory
 from apexoperator.persistence.sqlalchemy_audit import SQLAlchemyAuditLedger
 from apexoperator.persistence.sqlalchemy_tasks import SQLAlchemyTaskStore
+from apexoperator.persistence.task_evidence import SQLAlchemyTaskEvidenceStore
 from apexoperator.security.auth import InMemoryAuthenticator, JWTAuthenticator, Principal, ensure_bootstrap_user
+from apexoperator.security.rate_limit import LoginRateLimiter
 from apexoperator.security.rbac import Permission, RBAC, Role
 from apexoperator.service.approvals import ApprovalService
 
@@ -33,8 +38,21 @@ def create_app(
     database_path: str | Path | None = None,
     database_url: str | None = None,
     authenticator: InMemoryAuthenticator | JWTAuthenticator | None = None,
-    planner = None,
+    planner=None,
 ) -> FastAPI:
+    resolved_url = database_url or (
+        settings.database_url
+        if database_path is None
+        else f"sqlite:///{Path(database_path).resolve()}"
+    )
+    engine = make_engine(resolved_url)
+    init_database(engine)
+    sessions = make_session_factory(engine)
+
+    task_store = SQLAlchemyTaskStore(sessions)
+    audit_ledger = SQLAlchemyAuditLedger(sessions)
+    task_evidence_store = SQLAlchemyTaskEvidenceStore(sessions)
+
     if authenticator is None:
         if settings.app_env == "production":
             if not settings.jwt_secret or not settings.bootstrap_email or not settings.bootstrap_password_hash:
@@ -62,43 +80,31 @@ def create_app(
                 }
             )
 
-    resolved_url = database_url or (settings.database_url if database_path is None else f"sqlite:///{Path(database_path).resolve()}")
-    engine = make_engine(resolved_url)
-    init_database(engine)
-    sessions = make_session_factory(engine)
-
-    task_store = SQLAlchemyTaskStore(sessions)
-    audit_ledger = SQLAlchemyAuditLedger(sessions)
-
-    resolved_planner = planner
-    if resolved_planner is None:
-        if settings.planner_mode == "openai":
-            if not settings.openai_api_key:
-                raise RuntimeError("APEX_PLANNER=openai requires OPENAI_API_KEY")
-            resolved_planner = OpenAIPlanner(
-                api_key=settings.openai_api_key,
-                model=settings.openai_model,
-            )
-        else:
-            resolved_planner = MockPlanner()
+    planners = {"mock": planner or MockPlanner()}
+    if settings.openai_api_key:
+        planners["openai"] = OpenAIPlanner(
+            api_key=settings.openai_api_key,
+            model=settings.openai_model,
+        )
+    default_planner_mode = settings.planner_mode if settings.planner_mode in planners else "mock"
 
     service = ApprovalService(
         workspace_dir=str(workspace_dir),
         task_store=task_store,
         audit_ledger=audit_ledger,
-        planner=resolved_planner,
+        planners=planners,
+        default_planner_mode=default_planner_mode,
+        planner_model=settings.openai_model if "openai" in planners else None,
+        task_evidence_store=task_evidence_store,
     )
 
     logger = configure_logging()
-    api = FastAPI(title="ApexOperator API", version="0.3.0")
+    api = FastAPI(title="ApexOperator API", version="0.4.0")
     api.state.authenticator = authenticator
     api.state.service = service
     api.state.engine = engine
+    api.state.login_rate_limiter = LoginRateLimiter(limit=5, window_seconds=300)
 
-    # When the package is installed into site-packages (as it is in the
-    # production Docker image), __file__ no longer lives under the repository
-    # root. Prefer the container's copied frontend directory, while retaining
-    # the repository-relative path for local/editable installs.
     frontend_candidates = [
         Path(os.getenv("APEX_FRONTEND_DIR", "/app/frontend")),
         Path(__file__).resolve().parents[3] / "frontend",
@@ -126,6 +132,23 @@ def create_app(
     @api.get("/", include_in_schema=False)
     def frontend_home() -> FileResponse:
         return FileResponse(frontend_dir / "index.html")
+
+    @api.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
+            "form-action 'self'; script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; font-src 'self'; connect-src 'self'"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if settings.app_env == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
 
     @api.middleware("http")
     async def request_logging(request: Request, call_next):
@@ -162,17 +185,22 @@ def create_app(
     def principal(request: Request) -> Principal:
         token = _session_token(request)
         if not token:
-            raise HTTPException(status_code=401, detail="authentication required", headers={"WWW-Authenticate": "Bearer"})
+            raise HTTPException(
+                status_code=401,
+                detail="authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         _require_csrf(request)
         return request.app.state.authenticator.authenticate(token)
 
     @api.get("/auth/config")
-    def auth_config() -> dict[str, Any]:
+    def auth_config(request: Request) -> dict[str, Any]:
         return {
             "mode": settings.app_env,
             "production": settings.app_env == "production",
             "roles": [role.value for role in Role],
             "session_minutes": settings.session_minutes if settings.app_env == "production" else None,
+            "planner_modes": sorted(request.app.state.service.planners.keys()),
         }
 
     @api.get("/auth/me")
@@ -184,9 +212,41 @@ def create_app(
     def auth_login(body: LoginRequest, request: Request, response: Response) -> dict[str, str]:
         if settings.app_env != "production":
             raise HTTPException(status_code=404, detail="production authentication is disabled")
-        token, current, csrf_token, max_age = request.app.state.authenticator.login(body.email, body.password)
-        response.set_cookie(key=JWTAuthenticator.SESSION_COOKIE, value=token, max_age=max_age, httponly=True, secure=True, samesite="lax", path="/")
-        response.set_cookie(key=JWTAuthenticator.CSRF_COOKIE, value=csrf_token, max_age=max_age, httponly=False, secure=True, samesite="lax", path="/")
+
+        client_host = request.client.host if request.client else "unknown"
+        key = f"{client_host}:{body.email}"
+        allowed, retry_after = request.app.state.login_rate_limiter.allow(key)
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail="too many login attempts; try again later",
+                headers={"Retry-After": str(retry_after)},
+            )
+        try:
+            token, current, csrf_token, max_age = request.app.state.authenticator.login(
+                body.email, body.password
+            )
+        except HTTPException:
+            raise
+        request.app.state.login_rate_limiter.reset(key)
+        response.set_cookie(
+            key=JWTAuthenticator.SESSION_COOKIE,
+            value=token,
+            max_age=max_age,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/",
+        )
+        response.set_cookie(
+            key=JWTAuthenticator.CSRF_COOKIE,
+            value=csrf_token,
+            max_age=max_age,
+            httponly=False,
+            secure=True,
+            samesite="lax",
+            path="/",
+        )
         return {"actor_id": current.actor_id, "role": current.role.value}
 
     @api.post("/auth/logout")
@@ -222,37 +282,126 @@ def create_app(
     def get_task(task_id: str, request: Request) -> TaskResponse:
         return request.app.state.service.get_task(task_id)
 
+    @api.get("/tasks/{task_id}/detail", response_model=TaskDetailResponse)
+    def get_task_detail(task_id: str, request: Request) -> TaskDetailResponse:
+        reviewer = principal(request)
+        if not RBAC.is_allowed(reviewer.role, Permission.AUDIT_READ):
+            raise HTTPException(status_code=403, detail="permission denied")
+        return request.app.state.service.get_task_detail(task_id)
+
     @api.post("/tasks/{task_id}/approve", response_model=TaskResponse)
     def approve_task(task_id: str, body: ApprovalRequest, request: Request) -> TaskResponse:
-        return request.app.state.service.review_task(task_id, body, principal(request), approve=True)
+        return request.app.state.service.review_task(
+            task_id, body, principal(request), approve=True
+        )
 
     @api.post("/tasks/{task_id}/reject", response_model=TaskResponse)
     def reject_task(task_id: str, body: ApprovalRequest, request: Request) -> TaskResponse:
-        return request.app.state.service.review_task(task_id, body, principal(request), approve=False)
+        return request.app.state.service.review_task(
+            task_id, body, principal(request), approve=False
+        )
 
     @api.get("/audit/verify", response_model=AuditVerificationResponse)
     def verify_audit(request: Request) -> dict[str, bool]:
         return request.app.state.service.verify_audit(principal(request))
 
+    @api.get("/audit/export")
+    def audit_export(
+        request: Request,
+        export_format: Literal["json", "csv"] = "json",
+    ) -> Response:
+        reviewer = principal(request)
+        if not RBAC.is_allowed(reviewer.role, Permission.AUDIT_READ):
+            raise HTTPException(status_code=403, detail="permission denied")
+        events = request.app.state.service.audit_ledger.list_events(limit=2000)
+        if export_format == "json":
+            import json
+
+            return Response(
+                content=json.dumps(events, ensure_ascii=False, indent=2),
+                media_type="application/json",
+                headers={"Content-Disposition": 'attachment; filename="apexoperator-audit.json"'},
+            )
+
+        stream = io.StringIO()
+        writer = csv.writer(stream)
+        writer.writerow(
+            [
+                "sequence_id",
+                "event_id",
+                "timestamp",
+                "event_type",
+                "action",
+                "previous_hash",
+                "event_hash",
+                "after_state",
+            ]
+        )
+        for event in events:
+            writer.writerow(
+                [
+                    event["sequence_id"],
+                    event["event_id"],
+                    event["timestamp"],
+                    event["event_type"],
+                    event["action"],
+                    event["previous_hash"],
+                    event["event_hash"],
+                    __import__("json").dumps(event["after_state"], ensure_ascii=False),
+                ]
+            )
+        return Response(
+            content=stream.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="apexoperator-audit.csv"'},
+        )
+
+    @api.post("/audit/demo/tamper")
+    def simulate_tampering(request: Request) -> dict[str, bool]:
+        if settings.app_env == "production":
+            raise HTTPException(status_code=404, detail="tamper demo is disabled in production")
+        return request.app.state.service.simulate_tampering(principal(request))
+
+    @api.post("/demo/reset")
+    def reset_demo(request: Request) -> dict[str, bool]:
+        if settings.app_env == "production":
+            raise HTTPException(status_code=404, detail="demo reset is disabled in production")
+        return request.app.state.service.reset_demo_data(principal(request))
+
     @api.get("/dashboard/data")
-    def dashboard_data(request: Request) -> dict:
+    def dashboard_data(
+        request: Request,
+        limit: int = 50,
+        offset: int = 0,
+        status: str | None = None,
+        q: str | None = None,
+    ) -> dict[str, Any]:
         reviewer = principal(request)
         if not RBAC.is_allowed(reviewer.role, Permission.AUDIT_READ):
             raise HTTPException(status_code=403, detail="permission denied")
 
-        tasks = request.app.state.service.task_store.list_recent(50)
+        limit = max(1, min(limit, 100))
+        offset = max(0, offset)
+        tasks = request.app.state.service.task_store.list_recent(
+            limit,
+            offset=offset,
+            status=status,
+            query=q,
+        )
         counts: dict[str, int] = {}
-        for task in tasks:
-            status = str(task["status"])
-            counts[status] = counts.get(status, 0) + 1
+        for task in request.app.state.service.task_store.list_recent(100):
+            task_status = str(task["status"])
+            counts[task_status] = counts.get(task_status, 0) + 1
 
         return {
             "audit_ok": request.app.state.service.audit_ledger.verify_integrity(),
             "counts": counts,
             "tasks": tasks,
+            "total": request.app.state.service.task_store.count(status=status, query=q),
             "planner": {
-                "mode": settings.planner_mode,
-                "model": settings.openai_model if settings.planner_mode == "openai" else None,
+                "default_mode": request.app.state.service.default_planner_mode,
+                "available_modes": sorted(request.app.state.service.planners.keys()),
+                "model": request.app.state.service.planner_model,
                 "max_steps": request.app.state.service.runtime.MAX_STEPS,
                 "max_retries": request.app.state.service.runtime.MAX_RETRIES,
             },
