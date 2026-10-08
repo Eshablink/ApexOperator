@@ -1,11 +1,13 @@
 import hmac
 import os
+import secrets
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
 
 from apexoperator.agent.openai_planner import OpenAIPlanner
 from apexoperator.agent.runtime import MockPlanner
@@ -206,7 +208,7 @@ def create_app(
             if session.scalar(select(UserRecord).where(UserRecord.email == body.email)) is not None:
                 raise HTTPException(status_code=409, detail="email already registered")
             user = UserRecord(
-                actor_id=f"user-{__import__("secrets").token_hex(8)}",
+                actor_id=f"user-{secrets.token_hex(8)},
                 email=body.email,
                 organization_id=current.organization_id,
                 role=body.role,
