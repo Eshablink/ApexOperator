@@ -100,7 +100,6 @@ def test_frontend_live_control_room_end_to_end(tmp_path):
             expect(page.locator("#taskDetailBody")).to_contain_text("MODEL OUTPUT · UNTRUSTED")
             expect(page.locator("#taskDetailBody")).to_contain_text("APPLICATION POLICY")
 
-            page.get_by_role("button", name="Approve").last.click()
             expect(page.locator("#reviewReason")).to_be_visible()
             # Approval requires an explicit reason and uses the idempotent transition.
             page.get_by_label("Decision reason · required").fill("Verified invoice against source and policy.")
