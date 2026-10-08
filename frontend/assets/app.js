@@ -823,6 +823,7 @@ async function init() {
     }
   } catch (error) {
     state.authMode = "development";
+    state.initialized = true;
     syncAuthSurface();
     setAuthBadge();
     setWakeState(
@@ -830,6 +831,11 @@ async function init() {
       error.code === "TIMEOUT" ? "The server did not wake in time" : "Unable to initialize the workspace",
       error.code === "TIMEOUT" ? "Retry the demo after the hosted instance has had a chance to wake." : error.message,
     );
+    if (state.pendingDemoRole) {
+      const card = state.pendingDemoRole;
+      state.pendingDemoRole = null;
+      applyDemoRole(card);
+    }
   }
 }
 
